@@ -421,6 +421,9 @@ FodyWeavers.xsd
 # Built Visual Studio Code Extensions
 *.vsix
 
+# Local working notes (do not push)
+working.md
+
 # Windows Installer files from build outputs
 *.cab
 *.msi
