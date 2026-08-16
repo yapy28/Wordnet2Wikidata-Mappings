@@ -424,6 +424,9 @@ FodyWeavers.xsd
 # Local working notes (do not push)
 working.md
 
+# macOS metadata files
+.DS_Store
+
 # Windows Installer files from build outputs
 *.cab
 *.msi
