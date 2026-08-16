@@ -8,7 +8,7 @@ A pipeline for validating and importing synset-to-Wikidata mappings from Open En
 Wordnet2Wikidata-Mappings/
 ├── LICENSE                                    # MIT License for the project
 ├── docs/
-│   ├── BACKLOG_IMPORT.md                      # Detailed workflow and methodology for importing validated mappings via QuickStatements
+│   ├── backlog_import.md                      # Detailed workflow and methodology for importing validated mappings via QuickStatements
 │   └── comparison_pipeline.md                 # Pipeline design documentation with mermaid diagrams and use cases
 ├── scripts/
 │   ├── backlog_to_quickstatements.py         # Transforms cleaned backlog CSVs into QuickStatements TSV format for Wikidata import
@@ -21,21 +21,11 @@ Wordnet2Wikidata-Mappings/
 │   ├── submit_to_quickstatements.sh          # Shell script to submit QuickStatements batch via API for automated Wikidata import
 │   └── verify_import.py                      # Compares old vs new comparison tables to verify successful import of statements
 └── data/
-    ├── backlogs/
-    │   ├── OENN_backlog.csv                   # OENN entries with validated QID mappings missing from Wikidata (original)
-    │   ├── OENN_backlog_cleaned.csv           # OENN backlog with invalid ILI entries removed
-    │   ├── OEWN-Backlog.csv                   # OEWN entries with validated QID mappings missing from Wikidata (original)
-    │   └── OEWN-Backlog_cleaned.csv           # OEWN backlog with invalid ILI entries removed
+    ├── backlogs/                             # Files generated after manual work in Google Sheets
+    │   
     └── output/
         ├── comparison_table.csv               # Main comparison table with 22,670 candidate pairs and match signals
-        ├── multi_qid_review.csv               # Synsets with multiple candidate QIDs requiring manual adjudication
-        ├── multi_qid_review_with_scores.csv   # Enhanced multi-QID review with semantic similarity scores
-        ├── wikidata_import_oenn.csv            # QuickStatements import file generated from OENN backlog
-        ├── wikidata_import_oenn.tsv            # TSV format QuickStatements import for OENN
-        ├── wikidata_import_oewn.csv            # QuickStatements import file generated from OEWN backlog
-        ├── wikidata_import_oewn.tsv            # TSV format QuickStatements import for OEWN
-        ├── wikidata_import_cleaned.csv         # Combined cleaned QuickStatements import (CSV format)
-        └── wikidata_import_cleaned.tsv          # Combined cleaned QuickStatements import (TSV format, ready for batch upload)
+        ├── ...                                # Other files used for producing quickstatements
 ```
 
 ## Overview
@@ -48,7 +38,7 @@ This project provides a complete pipeline for:
 4. **Generating** QuickStatements batch files for importing missing links into Wikidata
 5. **Verifying** successful import by regenerate comparison tables
 
-## Key Statistics
+## Key Statistics on 01.07.2026
 
 - **Total candidate pairs**: 22,670
 - **QID join found (in Wikidata)**: 16,085 (70.95%)
@@ -56,6 +46,8 @@ This project provides a complete pipeline for:
 - **Strong deterministic evidence**: 11,758 (51.87%)
 - **Single-QID but join missing**: 5,822 (25.68%)
 - **Multi-QID synsets**: 1,252 (5.52%)
+
+## Key Statistics on 16.08.2026
 
 ## Workflow
 
