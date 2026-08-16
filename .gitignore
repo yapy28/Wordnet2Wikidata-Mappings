@@ -430,3 +430,6 @@ FodyWeavers.xsd
 
 # Python virtual environment
 venv/
+
+# Source data repositories (large, cloned from github)
+scripts/data_sources/
