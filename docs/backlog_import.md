@@ -30,26 +30,7 @@ The workflow addresses **missing Wikidata links** identified by the comparison p
 
 ### Input Files: Backlog CSVs
 
-Two backlog files contain synsets with validated QID mappings that are **missing from Wikidata**:
-
-#### OENN_backlog.csv
-
-- **Path**: `/wikidata/OENN_backlog.csv`
-- **Format**: CSV with header
-- **Columns**:
-  - `wn_synset`: WordNet synset ID (e.g., `01372125-n`)
-  - `wn_definition`: Synset definition text
-  - `wn_ili`: ILI identifier (e.g., `i42517`)
-  - `wn_members`: Pipe-separated lemma variants (e.g., `typhoid bacillus|Salmonella typhosa|Salmonella typhi`)
-  - `wn_wd_qid`: Wikidata QID (e.g., `Q22111431`)
-- **Rows**: ~3,000+ (OENN entries missing Wikidata links)
-
-#### OEWN-Backlog.csv
-
-- **Path**: `/wikidata/OEWN-Backlog.csv`
-- **Format**: CSV with header
-- **Columns**: Same as OENN_backlog.csv
-- **Rows**: ~2,000+ (OEWN entries missing Wikidata links)
+Two backlog files contain synsets with validated QID mappings that are **missing from Wikidata after they were worked on in Google Sheets: [docs.google.com/spreadsheets/d/1AnqYF8XDgEdS1qpUomRsTV8JSxLPEKD5CdpCtrSqL6k/edit?pli=1&amp;gid=759608002#gid=759608002](https://docs.google.com/spreadsheets/d/1AnqYF8XDgEdS1qpUomRsTV8JSxLPEKD5CdpCtrSqL6k/edit?pli=1&gid=759608002#gid=759608002)**
 
 ### Output File: QuickStatements TSV
 
