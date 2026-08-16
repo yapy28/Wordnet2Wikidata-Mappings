@@ -49,6 +49,13 @@ This project provides a complete pipeline for:
 
 ## Key Statistics on 16.08.2026
 
+- **Total candidate pairs**: 22,691
+- **QID join found (in Wikidata)**: 21,785 (96.01%)
+- **QID join missing (backlog target)**: 906 (3.99%)
+- **Strong deterministic evidence**: 18,592 (81.94%)
+- **Single-QID but join missing**: 140 (0.62%)
+- **Multi-QID synsets**: 1,255 (5.53%)
+
 ## Workflow
 
 ```
