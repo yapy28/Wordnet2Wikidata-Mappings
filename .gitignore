@@ -433,3 +433,6 @@ venv/
 
 # Source data repositories (large, cloned from github)
 scripts/data_sources/
+
+# Generated output files
+scripts/output/
