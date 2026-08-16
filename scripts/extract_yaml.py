@@ -13,10 +13,18 @@ multi_qid, qid_count, review_status
 Only entries that have a wikidata field are included.
 """
 import csv
+import subprocess
+import sys
 from pathlib import Path
 from typing import Dict, List
 
-import yaml
+try:
+    import yaml
+except ImportError:
+    print("Installing pyyaml...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "pyyaml"], 
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    import yaml
 
 BASE_DIR = Path(__file__).resolve().parent
 OEWN_ROOT = BASE_DIR / "data_sources" / "english-wordnet" / "src" / "yaml"

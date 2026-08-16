@@ -6,11 +6,19 @@ Fetches all Wikidata entities linked to English WordNet via:
 Writes: output/wikidata_wordnet_links.csv
 """
 import csv
+import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import requests
+try:
+    import requests
+except ImportError:
+    print("Installing requests...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "requests"],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    import requests
 
 WDQS_ENDPOINT = "https://query.wikidata.org/sparql"
 USER_AGENT = "oewn-oenn-fetch/0.1 (research script; contact: you@example.com)"

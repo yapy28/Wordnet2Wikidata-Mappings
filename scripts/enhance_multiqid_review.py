@@ -3,12 +3,34 @@ Add hypernym_chain column to multi_qid_review.csv and compute scores.
 Enhanced scoring: Levenshtein for labels, Jaccard for definitions, semantic for hierarchy.
 """
 import csv
+import subprocess
+import sys
 from pathlib import Path
 from typing import Dict
 
-import yaml
-import numpy as np
-from sentence_transformers import SentenceTransformer, util
+try:
+    import yaml
+except ImportError:
+    print("Installing pyyaml...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "pyyaml"],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    import yaml
+
+try:
+    import numpy as np
+except ImportError:
+    print("Installing numpy...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "numpy"],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    import numpy as np
+
+try:
+    from sentence_transformers import SentenceTransformer, util
+except ImportError:
+    print("Installing sentence-transformers...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "sentence-transformers"],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    from sentence_transformers import SentenceTransformer, util
 
 BASE_DIR = Path(__file__).resolve().parent
 OEWN_ROOT = BASE_DIR / "data_sources" / "english-wordnet" / "src" / "yaml"
