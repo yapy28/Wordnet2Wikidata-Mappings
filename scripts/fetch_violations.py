@@ -24,7 +24,7 @@ WDQS_ENDPOINT = "https://query.wikidata.org/sparql"
 USER_AGENT = "violation-fetcher/0.1 (research script)"
 
 BASE_DIR = Path(__file__).resolve().parent.parent  # Go to repo root
-OUT_DIR = BASE_DIR / "data" / "output"
+OUT_DIR = BASE_DIR / "data" / "output" / "20260929"
 
 # Paths to source repos
 OEWN_ROOT = Path("~/git/english-wordnet/src/yaml").expanduser()
@@ -81,7 +81,7 @@ def fetch_p5063_single_value_violations() -> List[Dict[str, str]]:
     Returns: List of {entity, entityLabel, ili} for each violation
     """
     query = """
-    SELECT ?entity ?entityLabel ?ili1 ?ili2 WHERE {
+    SELECT ?entity ?entityLabel ?entityDescription ?ili1 ?ili2 WHERE {
       ?entity wdt:P5063 ?ili1 .
       ?entity wdt:P5063 ?ili2 .
       FILTER(?ili1 != ?ili2)
@@ -98,6 +98,7 @@ def fetch_p5063_single_value_violations() -> List[Dict[str, str]]:
         entity_uri = row.get("entity", {}).get("value", "")
         qid = entity_uri.rsplit("/", 1)[-1] if entity_uri else ""
         label = row.get("entityLabel", {}).get("value", "")
+        description = row.get("entityDescription", {}).get("value", "")
         ili1 = row.get("ili1", {}).get("value", "")
         ili2 = row.get("ili2", {}).get("value", "")
         
@@ -107,6 +108,7 @@ def fetch_p5063_single_value_violations() -> List[Dict[str, str]]:
             "entity": entity_uri,
             "qid": qid,
             "label": label,
+            "description": description,
             "ili": ili1,
         })
         results.append({
@@ -114,6 +116,7 @@ def fetch_p5063_single_value_violations() -> List[Dict[str, str]]:
             "entity": entity_uri,
             "qid": qid,
             "label": label,
+            "description": description,
             "ili": ili2,
         })
     
@@ -128,7 +131,7 @@ def fetch_p5063_unique_value_violations() -> List[Dict[str, str]]:
     Returns: List of {ili, entity, entityLabel} for each violation
     """
     query = """
-    SELECT ?ili ?entity1 ?entity1Label ?entity2 ?entity2Label WHERE {
+    SELECT ?ili ?entity1 ?entity1Label ?entity1Description ?entity2 ?entity2Label ?entity2Description WHERE {
       ?entity1 wdt:P5063 ?ili .
       ?entity2 wdt:P5063 ?ili .
       FILTER(?entity1 != ?entity2)
@@ -146,7 +149,9 @@ def fetch_p5063_unique_value_violations() -> List[Dict[str, str]]:
         entity1_uri = row.get("entity1", {}).get("value", "")
         entity2_uri = row.get("entity2", {}).get("value", "")
         label1 = row.get("entity1Label", {}).get("value", "")
+        description1 = row.get("entity1Description", {}).get("value", "")
         label2 = row.get("entity2Label", {}).get("value", "")
+        description2 = row.get("entity2Description", {}).get("value", "")
         qid1 = entity1_uri.rsplit("/", 1)[-1] if entity1_uri else ""
         qid2 = entity2_uri.rsplit("/", 1)[-1] if entity2_uri else ""
         
@@ -156,6 +161,7 @@ def fetch_p5063_unique_value_violations() -> List[Dict[str, str]]:
             "entity": entity1_uri,
             "qid": qid1,
             "label": label1,
+            "description": description1,
             "ili": ili,
         })
         results.append({
@@ -163,6 +169,7 @@ def fetch_p5063_unique_value_violations() -> List[Dict[str, str]]:
             "entity": entity2_uri,
             "qid": qid2,
             "label": label2,
+            "description": description2,
             "ili": ili,
         })
     
@@ -180,7 +187,7 @@ def fetch_p8814_violations() -> List[Dict[str, str]]:
     Returns: List of {synset_id, entity, entityLabel} for each violation
     """
     query = """
-    SELECT ?ssid ?entity1 ?entity2 ?entity1Label ?entity2Label WHERE {
+    SELECT ?ssid ?entity1 ?entity2 ?entity1Label ?entity1Description ?entity2Label ?entity2Description WHERE {
       ?entity1 wdt:P8814 ?ssid .
       ?entity2 wdt:P8814 ?ssid .
       FILTER(?entity1 != ?entity2)
@@ -198,10 +205,11 @@ def fetch_p8814_violations() -> List[Dict[str, str]]:
     for row in bindings:
         ssid = row.get("ssid", {}).get("value", "")
         # Get both entities
-        for entity_key in ["entity1", "entity2"]:
+        for i, entity_key in enumerate(["entity1", "entity2"]):
             entity_uri = row.get(entity_key, {}).get("value", "")
             qid = entity_uri.rsplit("/", 1)[-1] if entity_uri else ""
             label = row.get(f"{entity_key}Label", {}).get("value", "")
+            description = row.get(f"{entity_key}Description", {}).get("value", "")
             
             if qid:  # Only add if we have a QID
                 # Deduplicate by (ssid, qid)
@@ -214,6 +222,7 @@ def fetch_p8814_violations() -> List[Dict[str, str]]:
                         "entity": entity_uri,
                         "qid": qid,
                         "label": label,
+                        "description": description,
                     })
     
     return results
@@ -407,6 +416,7 @@ def build_violation_table(violations: List[Dict[str, str]], ili_map: Dict[str, L
         qid = v.get("qid", "")
         ili = v.get("ili", "")
         label = v.get("label", "")
+        description = v.get("description", "")
         synset_id = v.get("synset_id", "")
         
         if vtype == "p8814":
@@ -418,6 +428,7 @@ def build_violation_table(violations: List[Dict[str, str]], ili_map: Dict[str, L
                     "synset_id": synset_id,
                     "qid": qid,
                     "wikidata_label": label,
+                    "wikidata_description": description,
                     "synset_definition": synset.get("definition", ""),
                     "synset_members": synset.get("members", ""),
                     "synset_ili": synset.get("ili", ""),
@@ -437,6 +448,7 @@ def build_violation_table(violations: List[Dict[str, str]], ili_map: Dict[str, L
                 "qid": qid,
                 "ili": ili,
                 "wikidata_label": label,
+                "wikidata_description": description,
             }
             
             # Add synset info for this ILI

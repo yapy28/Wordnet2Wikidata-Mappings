@@ -4,6 +4,7 @@ Categorize P5063 and P8814 violations to identify real errors vs valid duplicate
 Adds columns to violation tables:
 - category: SYNONYMS_SAME_CONCEPT, BOTH_IN_MEMBERS, ONE_IN_MEMBERS, DIFFERENT_CONCEPTS, etc.
 - is_real_violation: TRUE/FALSE (recommendation)
+- def_desc_similarity: Token overlap score between synset definition and Wikidata description
 - notes: Explanation for the categorization
 
 Usage:
@@ -18,9 +19,10 @@ Output files:
   - data/output/20260929/p5063_violations_categorized.csv
 """
 import csv
+import re
 from pathlib import Path
 from collections import defaultdict
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Set
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 P8814_INPUT = BASE_DIR / "data" / "output" / "20260929" / "p8814_violations_from_wd.csv"
@@ -28,15 +30,38 @@ P5063_INPUT = BASE_DIR / "data" / "output" / "20260929" / "p5063_violations_from
 P8814_OUTPUT = BASE_DIR / "data" / "output" / "20260929" / "p8814_violations_categorized.csv"
 P5063_OUTPUT = BASE_DIR / "data" / "output" / "20260929" / "p5063_violations_categorized.csv"
 
+TOKEN_RE = re.compile(r"[A-Za-z0-9]+")
+
+
+def normalize_text(value: str) -> str:
+    """Normalize text to lowercase tokens only."""
+    return " ".join(TOKEN_RE.findall((value or "").lower()))
+
+
+def text_tokens(value: str) -> Set[str]:
+    """Extract set of normalized tokens."""
+    return set(normalize_text(value).split())
+
+
+def compute_similarity(text1: str, text2: str) -> int:
+    """Compute token overlap similarity between two texts."""
+    tokens1 = text_tokens(text1)
+    tokens2 = text_tokens(text2)
+    if not tokens1 or not tokens2:
+        return 0
+    overlap = len(tokens1 & tokens2)
+    # Return overlap count (can also normalize by min/max length if needed)
+    return overlap
+
 
 def categorize_p8814(rows: List[Dict[str, str]]) -> List[Dict[str, str]]:
     """
     Categorize P8814 violations (synsets with multiple QIDs).
     
-    For each synset, we look at all its QIDs and their labels to determine:
+    For each synset, we look at all its QIDs and their labels/descriptions to determine:
     - Are the labels synonyms? (SYNONYMS_SAME_CONCEPT)
     - Are both labels in the synset's members? (BOTH_IN_MEMBERS)
-    - Is only one label in members? (ONE_IN_MEMBERS)
+    - Is only one label in members? Check if description matches (ONE_IN_MEMBERSDesc_MISMATCH, etc.)
     - Are the labels completely different? (DIFFERENT_CONCEPTS)
     """
     # Group rows by synset_id
@@ -52,29 +77,37 @@ def categorize_p8814(rows: List[Dict[str, str]]) -> List[Dict[str, str]]:
         members = set(m.strip().lower() for m in synset_rows[0]['synset_members'].split('|') if m.strip())
         ili = synset_rows[0]['synset_ili']
         
-        # Get all QIDs and labels for this synset
-        qid_labels = []
+        # Get all QIDs, labels, and descriptions for this synset
+        qid_info = []
         for row in synset_rows:
             qid = row['qid']
             label = row['wikidata_label'].lower() if row['wikidata_label'] else ""
-            qid_labels.append((qid, label))
+            description = row.get('wikidata_description', '') or ""
+            qid_info.append({
+                'qid': qid,
+                'label': label,
+                'description': description,
+                'label_norm': label.strip().lower(),
+            })
         
         # Determine category
         category = "UNKNOWN"
         is_real_violation = "FALSE"
         notes = ""
+        similarity_scores = ""
         
-        if len(qid_labels) == 1:
+        if len(qid_info) == 1:
             category = "SINGLE_QID"
             is_real_violation = "FALSE"
             notes = "Only one QID for this synset"
-        elif len(qid_labels) == 2:
-            q1, l1 = qid_labels[0]
-            q2, l2 = qid_labels[1]
+            sim = compute_similarity(definition, qid_info[0]['description'])
+            similarity_scores = f"{qid_info[0]['qid']}:{sim}"
+        elif len(qid_info) == 2:
+            q1, q2 = qid_info[0], qid_info[1]
             
             # Normalize labels
-            l1_norm = l1.strip().lower()
-            l2_norm = l2.strip().lower()
+            l1_norm = q1['label_norm']
+            l2_norm = q2['label_norm']
             
             # Check label similarity
             labels_identical = l1_norm == l2_norm
@@ -87,31 +120,58 @@ def categorize_p8814(rows: List[Dict[str, str]]) -> List[Dict[str, str]]:
             l1_in_members = any(l1_norm in m for m in members)
             l2_in_members = any(l2_norm in m for m in members)
             
+            # Compute similarity scores
+            sim1 = compute_similarity(definition, q1['description'])
+            sim2 = compute_similarity(definition, q2['description'])
+            similarity_scores = f"{q1['qid']}:{sim1}; {q2['qid']}:{sim2}"
+            
             if labels_similar:
                 category = "SYNONYMS_SAME_CONCEPT"
                 is_real_violation = "FALSE"
-                notes = f"Labels '{qid_labels[0][1]}' and '{qid_labels[1][1]}' are synonyms"
+                notes = f"Labels '{q1['label']}' and '{q2['label']}' are synonyms (sim: {sim1}, {sim2})"
             elif l1_in_members and l2_in_members:
                 category = "BOTH_IN_MEMBERS"
                 is_real_violation = "FALSE"
                 notes = f"Both labels are in synset members: {synset_rows[0]['synset_members']}"
             elif l1_in_members or l2_in_members:
-                category = "ONE_IN_MEMBERS"
-                is_real_violation = "REVIEW"
-                in_members = [q for q, l in qid_labels if any(l.strip().lower() in m for m in members)]
-                not_in_members = [q for q, l in qid_labels if not any(l.strip().lower() in m for m in members)]
-                notes = f"QIDs in members: {', '.join(in_members)} | Not in members: {', '.join(not_in_members)}"
+                # Check description similarity for the one NOT in members
+                in_members = []
+                not_in_members = []
+                desc_mismatches = []
+                
+                for qi in qid_info:
+                    if any(qi['label_norm'] in m for m in members):
+                        in_members.append(qi['qid'])
+                    else:
+                        not_in_members.append(qi['qid'])
+                        # Check if description still matches synset
+                        sim = compute_similarity(definition, qi['description'])
+                        # Threshold: if similarity is very low (<= 2 tokens), flag as mismatch
+                        if sim <= 2:
+                            desc_mismatches.append(qi['qid'])
+                
+                # If description doesn't match, it's likely a real violation
+                if desc_mismatches:
+                    category = "ONE_IN_MEMBERS_DESC_MISMATCH"
+                    is_real_violation = "TRUE"
+                    notes = f"Label in members but description mismatch: {', '.join(desc_mismatches)} | In members: {', '.join(in_members)}"
+                else:
+                    category = "ONE_IN_MEMBERS"
+                    is_real_violation = "REVIEW"
+                    notes = f"QIDs in members: {', '.join(in_members)} | Not in members: {', '.join(not_in_members)}"
             else:
                 category = "DIFFERENT_CONCEPTS"
                 is_real_violation = "TRUE"
-                notes = f"Labels '{qid_labels[0][1]}' and '{qid_labels[1][1]}' are different concepts"
+                notes = f"Labels '{q1['label']}' and '{q2['label']}' are different concepts (sim: {sim1}, {sim2})"
         else:
             # 3+ QIDs
             category = "MULTIPLE_QIDS"
             is_real_violation = "REVIEW"
-            qids_str = ", ".join(q for q, l in qid_labels)
-            labels_str = ", ".join(l for q, l in qid_labels)
-            notes = f"Multiple QIDs ({len(qid_labels)}): {qids_str} | Labels: {labels_str}"
+            qids_str = ", ".join(qi['qid'] for qi in qid_info)
+            labels_str = ", ".join(qi['label'] for qi in qid_info)
+            sims = "; ".join(f"{qi['qid']}:{compute_similarity(definition, qi['description'])}" for qi in qid_info)
+            similarity_scores = sims
+            notes = f"Multiple QIDs ({len(qid_info)}): {qids_str} | Labels: {labels_str} | Sim: {sims}"
         
         # Add category info to each row
         for row in synset_rows:
@@ -119,6 +179,7 @@ def categorize_p8814(rows: List[Dict[str, str]]) -> List[Dict[str, str]]:
             row_copy['category'] = category
             row_copy['is_real_violation'] = is_real_violation
             row_copy['categorization_notes'] = notes
+            row_copy['def_desc_similarity'] = similarity_scores
             categorized_rows.append(row_copy)
     
     return categorized_rows
