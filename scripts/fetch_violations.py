@@ -180,7 +180,7 @@ def fetch_p8814_violations() -> List[Dict[str, str]]:
     Returns: List of {synset_id, entity, entityLabel} for each violation
     """
     query = """
-    SELECT ?ssid ?entity ?entityLabel WHERE {
+    SELECT ?ssid ?entity1 ?entity2 ?entity1Label ?entity2Label WHERE {
       ?entity1 wdt:P8814 ?ssid .
       ?entity2 wdt:P8814 ?ssid .
       FILTER(?entity1 != ?entity2)
@@ -192,20 +192,29 @@ def fetch_p8814_violations() -> List[Dict[str, str]]:
     print("  Querying P8814 violations...")
     bindings = run_wdqs(query)
     
+    # Use a set to avoid duplicates
+    seen = set()
     results = []
     for row in bindings:
         ssid = row.get("ssid", {}).get("value", "")
-        entity_uri = row.get("entity", {}).get("value", "")
-        qid = entity_uri.rsplit("/", 1)[-1] if entity_uri else ""
-        label = row.get("entityLabel", {}).get("value", "")
-        
-        results.append({
-            "type": "p8814",
-            "synset_id": ssid,
-            "entity": entity_uri,
-            "qid": qid,
-            "label": label,
-        })
+        # Get both entities
+        for entity_key in ["entity1", "entity2"]:
+            entity_uri = row.get(entity_key, {}).get("value", "")
+            qid = entity_uri.rsplit("/", 1)[-1] if entity_uri else ""
+            label = row.get(f"{entity_key}Label", {}).get("value", "")
+            
+            if qid:  # Only add if we have a QID
+                # Deduplicate by (ssid, qid)
+                key = (ssid, qid)
+                if key not in seen:
+                    seen.add(key)
+                    results.append({
+                        "type": "p8814",
+                        "synset_id": ssid,
+                        "entity": entity_uri,
+                        "qid": qid,
+                        "label": label,
+                    })
     
     return results
 
