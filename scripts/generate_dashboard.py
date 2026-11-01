@@ -211,14 +211,14 @@ def link_synset(synset_id):
 
 
 def link_ili(ili):
-    """Create a link to ILI in the Global WordNet Association."""
+    """Create a link to ILI in the Global WordNet Association's CILI."""
     if not ili or ili == '-' or ili == 'None':
         return '-' 
     # Handle multiple ILIs (pipe-separated)
     if '|' in ili:
-        parts = [f'<a href="https://ili.globalwordnet.org/i/{part.strip()}" target="_blank">{part.strip()}</a>' for part in ili.split('|')]
+        parts = [f'<a href="https://compling.upol.cz/omw/ili/{part.strip()}" target="_blank">{part.strip()}</a>' for part in ili.split('|')]
         return ' | '.join(parts)
-    return f'<a href="https://ili.globalwordnet.org/i/{ili}" target="_blank">{ili}</a>'
+    return f'<a href="https://compling.upol.cz/omw/ili/{ili}" target="_blank">{ili}</a>'
 
 
 def generate_rows(rows, is_p5063=False):
