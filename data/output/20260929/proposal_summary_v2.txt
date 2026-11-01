@@ -1,0 +1,51 @@
+
+======================================================================
+PROPOSAL GENERATION SUMMARY - v2
+======================================================================
+
+Generated: 2026-11-01 11:28:18
+
+P8814 (WordNet Synset ID) Violations:
+  Total:           1,977
+  Real Violations: 856
+  Auto-fix:        440 QuickStatements
+  Manual Review:   0
+  Valid (No Fix):  1,121
+  Unique Synsets:  416
+  QuickStatements: data/output/20260929/quickstatements/p8814_fixes_quickstatements.txt
+  Manual Review:   data/output/20260929/manual_review/p8814_manual_review.csv
+
+P5063 (ILI) Violations:
+  Total:           377
+  Real Violations: 147
+  Auto-fix:        75 QuickStatements
+  Manual Review:   0
+  Valid (No Fix):  230
+  Unique ILIs:     72
+  QuickStatements: data/output/20260929/quickstatements/p5063_fixes_quickstatements.txt
+  Manual Review:   data/output/20260929/manual_review/p5063_manual_review.csv
+
+======================================================================
+TOTALS:
+======================================================================
+  Total Violations:     2,354
+  Real Violations:     1,003
+  Auto-fixable:         515
+  Manual Review:        0
+  Valid (No Fix):       1,351
+
+======================================================================
+FILES GENERATED:
+======================================================================
+  data/output/20260929/quickstatements/p8814_fixes_quickstatements.txt
+  data/output/20260929/quickstatements/p5063_fixes_quickstatements.txt
+  data/output/20260929/manual_review/p8814_manual_review.csv
+  data/output/20260929/manual_review/p5063_manual_review.csv
+
+======================================================================
+NEXT STEPS:
+======================================================================
+1. Review the QuickStatements files for correctness
+2. Test a small batch on Wikidata
+3. Address manual review cases (if any)
+4. Submit bulk edits for auto-fixable violations
