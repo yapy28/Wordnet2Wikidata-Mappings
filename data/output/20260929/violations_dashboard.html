@@ -120,15 +120,21 @@
                 <li class="toc-level-1"><a href="#exports" onclick="scrollToSection('exports'); return false;">Export Data</a></li>
                 <li class="toc-level-1"><a href="#methodology" onclick="scrollToSection('methodology'); return false;">Methodology</a></li>
                 <li class="toc-level-1"><a href="#enhanced" onclick="scrollToSection('enhanced'); return false;">Enhanced Analysis</a></li>
+                <li class="toc-level-1"><a href="#proposals" onclick="scrollToSection('proposals'); return false;">🎯 Proposed Fixes</a>
+                    <ul>
+                        <li class="toc-level-2"><a href="#p8814-proposals" onclick="scrollToSection('p8814-proposals'); return false;">P8814 Proposals (856)</a></li>
+                        <li class="toc-level-2"><a href="#p5063-proposals" onclick="scrollToSection('p5063-proposals'); return false;">P5063 Proposals (147)</a></li>
+                    </ul>
+                </li>
             </ul>
         </div>
         
         <div class="stats-section">
             <div class="stats-grid">
                 <div class="stat-card"><div class="value">2761</div><div class="label">Total Violations</div></div>
-                <div class="stat-card"><div class="value">1168</div><div class="label">Real Errors</div></div>
+                <div class="stat-card"><div class="value">1003</div><div class="label">Real Errors (Fixable)</div></div>
                 <div class="stat-card"><div class="value">1593</div><div class="label">Valid Mappings</div></div>
-                <div class="stat-card"><div class="value">0</div><div class="label">Needs Review</div></div>
+                <div class="stat-card"><div class="value">1003</div><div class="label">Proposed Fixes</div></div>
             </div>
             <div class="summary-table">
                 <table>
@@ -292,7 +298,186 @@
             </div>
         </div>
         
-        <div style="margin-top: 40px; padding: 20px; text-align: center; color: #888; font-size: 0.9em;">
+        
+        <!-- Proposals Section -->
+        <div class="section" id="proposals">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>🎯 Proposed Fixes</h2>
+                <span class="toggle-indicator">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="stats-section">
+                    <h3>Quick Fix Summary</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card"><div class="value">1003</div><div class="label">Total Fixable Violations</div></div>
+                        <div class="stat-card"><div class="value">856</div><div class="label">P8814 QuickStatements</div></div>
+                        <div class="stat-card"><div class="value">147</div><div class="label">P5063 QuickStatements</div></div>
+                        <div class="stat-card"><div class="value">0</div><div class="label">Manual Review</div></div>
+                    </div>
+                </div>
+                
+                <div class="summary-table">
+                    <h3>📋 What Needs to Be Fixed</h3>
+                    <p><strong>All fixes are on the WIKIDATA SIDE.</strong> The source repositories (english-wordnet, english-namenet) are NOT the primary issue. The violations are caused by duplicate P5063/P8814 statements on Wikidata items.</p>
+                    <p>Use <a href="https://quickstatements.toolforge.org/" class="external-link-icon">QuickStatements</a> to apply the fixes below.</p>
+                </div>
+                
+                <div class="section" id="p8814-proposals">
+                    <div class="section-header" onclick="toggleSection(this)">
+                        <h3>P8814 (WordNet Synset ID) Proposals</h3>
+                        <span class="toggle-indicator">▼</span>
+                    </div>
+                    <div class="section-content">
+                        <div class="summary-table">
+                            <p><strong>856 violations</strong> where multiple Wikidata QIDs share the same WordNet synset ID.</p>
+                            <p><strong>Fix Strategy:</strong> Remove duplicate P8814 statements, keeping the QID that best matches the synset definition.</p>
+                            <div class="export-buttons">
+                                <a href="p8814_fixes_quickstatements.txt" download>⬇️ Download P8814 QuickStatements (856)</a>
+                            </div>
+                        </div>
+                        <div class="violation-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Action</th>
+                                        <th>Remove From QID</th>
+                                        <th>Synset ID</th>
+                                        <th>Keep On QID</th>
+                                        <th>Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>-P8814</td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q646740" class="external-link-icon">Q646740</a></td>
+                                        <td><a href="https://wordnet.princeton.edu/wnbrowserDetail?type=00058822-n">00058822-n</a></td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q18351973" class="external-link-icon">Q18351973</a></td>
+                                        <td>Label in members</td>
+                                    </tr>
+                                    <tr>
+                                        <td>-P8814</td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q3942953" class="external-link-icon">Q3942953</a></td>
+                                        <td><a href="https://wordnet.princeton.edu/wnbrowserDetail?type=00069153-n">00069153-n</a></td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q2292472" class="external-link-icon">Q2292472</a></td>
+                                        <td>Label in members</td>
+                                    </tr>
+                                    <tr>
+                                        <td>-P8814</td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q206989" class="external-link-icon">Q206989</a></td>
+                                        <td><a href="https://wordnet.princeton.edu/wnbrowserDetail?type=00123481-n">00123481-n</a></td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q2992372" class="external-link-icon">Q2992372</a></td>
+                                        <td>Label in members</td>
+                                    </tr>
+                                    <tr>
+                                        <td>-P8814</td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q176274" class="external-link-icon">Q176274</a></td>
+                                        <td><a href="https://wordnet.princeton.edu/wnbrowserDetail?type=00402591-n">00402591-n</a></td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q184872" class="external-link-icon">Q184872</a></td>
+                                        <td>Label in members</td>
+                                    </tr>
+                                    <tr>
+                                        <td>-P8814</td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q125460" class="external-link-icon">Q125460</a></td>
+                                        <td><a href="https://wordnet.princeton.edu/wnbrowserDetail?type=00465105-n">00465105-n</a></td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q172964" class="external-link-icon">Q172964</a></td>
+                                        <td>Label in members</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p style="margin-top: 15px;"><a href="p8814_fixes_quickstatements.txt" class="external-link-icon">📄 View All 856 P8814 QuickStatements</a></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section" id="p5063-proposals">
+                    <div class="section-header" onclick="toggleSection(this)">
+                        <h3>P5063 (ILI) Proposals</h3>
+                        <span class="toggle-indicator">▼</span>
+                    </div>
+                    <div class="section-content">
+                        <div class="summary-table">
+                            <p><strong>147 violations</strong> where multiple Wikidata QIDs share the same ILI.</p>
+                            <p><strong>Fix Strategy:</strong> Remove duplicate P5063 statements, keeping the QID that best matches the ILI definition.</p>
+                            <div class="export-buttons">
+                                <a href="p5063_fixes_quickstatements.txt" download>⬇️ Download P5063 QuickStatements (147)</a>
+                            </div>
+                        </div>
+                        <div class="violation-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Action</th>
+                                        <th>Remove From QID</th>
+                                        <th>ILI</th>
+                                        <th>Keep On QID</th>
+                                        <th>Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>-P5063</td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q4879779" class="external-link-icon">Q4879779</a></td>
+                                        <td><a href="https://ili.globalwordnet.org/i/i101316">i101316</a></td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q7607619" class="external-link-icon">Q7607619</a></td>
+                                        <td>Better label match</td>
+                                    </tr>
+                                    <tr>
+                                        <td>-P5063</td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q164138" class="external-link-icon">Q164138</a></td>
+                                        <td><a href="https://ili.globalwordnet.org/i/i102781">i102781</a></td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q8000935" class="external-link-icon">Q8000935</a></td>
+                                        <td>Better label match</td>
+                                    </tr>
+                                    <tr>
+                                        <td>-P5063</td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q49439977" class="external-link-icon">Q49439977</a></td>
+                                        <td><a href="https://ili.globalwordnet.org/i/i104970">i104970</a></td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q7994710" class="external-link-icon">Q7994710</a></td>
+                                        <td>Better label match</td>
+                                    </tr>
+                                    <tr>
+                                        <td>-P5063</td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q281490" class="external-link-icon">Q281490</a></td>
+                                        <td><a href="https://ili.globalwordnet.org/i/i107547">i107547</a></td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q3448862" class="external-link-icon">Q3448862</a></td>
+                                        <td>Better label match</td>
+                                    </tr>
+                                    <tr>
+                                        <td>-P5063</td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q1075923" class="external-link-icon">Q1075923</a></td>
+                                        <td><a href="https://ili.globalwordnet.org/i/i110785">i110785</a></td>
+                                        <td><a href="https://www.wikidata.org/wiki/Q8187550" class="external-link-icon">Q8187550</a></td>
+                                        <td>Better label match</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p style="margin-top: 15px;"><a href="p5063_fixes_quickstatements.txt" class="external-link-icon">📄 View All 147 P5063 QuickStatements</a></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="summary-table">
+                    <h3>📚 Documentation</h3>
+                    <ul>
+                        <li><a href="../../../docs/PROPOSALS.md" class="external-link-icon">📄 Full Proposal Document</a> - Detailed analysis and methodology</li>
+                        <li><a href="https://www.wikidata.org/wiki/QuickStatements" class="external-link-icon">⚡ QuickStatements Tool</a> - Apply the fixes on Wikidata</li>
+                        <li><a href="../../../scripts/generate_proposals.py" class="external-link-icon">🔄 Generate Proposals Script</a> - How the QuickStatements were generated</li>
+                    </ul>
+                </div>
+                
+                <div class="summary-table">
+                    <h3>⚠️ Next Steps</h3>
+                    <ol>
+                        <li><strong>Verify:</strong> Manually review 10-20 QuickStatements from each file</li>
+                        <li><strong>Test:</strong> Apply a small batch (10-20) on Wikidata to verify they work</li>
+                        <li><strong>Bulk Edit:</strong> Submit remaining QuickStatements in batches of 100</li>
+                        <li><strong>Monitor:</strong> Check that violations are resolved after edits</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+        
+<div style="margin-top: 40px; padding: 20px; text-align: center; color: #888; font-size: 0.9em;">
             <p>Generated from <strong>WordNet2Wikidata-Mappings</strong> repository</p>
             <p>Data source: Wikidata SPARQL Query Service | Date: 2026-11-01</p>
         </div>
