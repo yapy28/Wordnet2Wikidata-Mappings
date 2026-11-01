@@ -63,7 +63,15 @@ def generate_comparison_table_html(comparison_data, max_rows=50):
         # Truncate long text
         wd_label_display = wd_label[:40] + '...' if len(wd_label) > 40 else wd_label
         synset_display = synset_id or ili
-        synset_display = synset_display[:25] + '...' if len(synset_display) > 25 else synset_display
+        synset_display_short = synset_display[:25] + '...' if len(synset_display) > 25 else synset_display
+        
+        # Build synset/ILI links
+        if ili:
+            synset_link = f'<a href="https://ili.globalwordnet.org/i/{ili}" target="_blank" class="external-link">{synset_display_short}</a>'
+        elif synset_id:
+            synset_link = f'<a href="https://globalwordnet.github.io/oewn-gui/?synset={synset_id}" target="_blank" class="external-link">{synset_display_short}</a>'
+        else:
+            synset_link = synset_display_short
         
         # Status badge
         if status == 'FIX_PROPOSED':
@@ -81,15 +89,21 @@ def generate_comparison_table_html(comparison_data, max_rows=50):
         else:
             fix_badge = f'<span class="badge badge-real">✗ No</span>'
         
+        # Fix QID link
+        if fix_qid:
+            fix_qid_link = f'<a href="https://www.wikidata.org/wiki/{fix_qid}" target="_blank" class="external-link">{fix_qid}</a>'
+        else:
+            fix_qid_link = '-'
+        
         rows.append(f"""
             <tr>
                 <td>{entity_type}</td>
                 <td><a href="https://www.wikidata.org/wiki/{qid}" target="_blank" class="external-link">{qid}</a></td>
                 <td>{wd_label_display}</td>
-                <td>{synset_display}</td>
+                <td>{synset_link}</td>
                 <td>{status_badge}</td>
                 <td>{fix_badge}</td>
-                <td>{fix_qid or '-'}</td>
+                <td>{fix_qid_link}</td>
             </tr>
         """)
     
