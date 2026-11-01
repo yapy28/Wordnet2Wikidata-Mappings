@@ -301,8 +301,9 @@ def generate_dashboard():
             border-color: var(--primary);
             box-shadow: var(--shadow-hover);
         }}
-        .tab-content {{ display: none; }}
-        .tab-content.active {{ display: block; }}
+        .tab-content {{ display: none; padding: 0; }}
+        .tab-content.active {{ display: block; padding: 20px 0; }}
+        .tab-content .section {{ margin-bottom: 20px; }}
         
         /* Sections */
         .section {{

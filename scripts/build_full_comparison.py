@@ -34,6 +34,31 @@ DATA_DIR = REPO_ROOT / "data"
 OUTPUT_DIR = DATA_DIR / "output" / "20260929"
 COMPARISON_FILE = OUTPUT_DIR / "full_comparison_table.csv"
 
+# Category name mappings for human-readable display
+CATEGORY_LABELS = {
+    # P8814 categories
+    'BOTH_IN_MEMBERS': 'Both QIDs in synset members',
+    'DIFFERENT_CONCEPTS': 'Different concepts',
+    'MULTIPLE_QIDS_ALL_IN_MEMBERS': 'Multiple QIDs, all in synset members',
+    'MULTIPLE_QIDS_MIXED': 'Multiple QIDs, mixed matches',
+    'MULTIPLE_QIDS_WITH_MISMATCHES': 'Multiple QIDs with definition mismatches',
+    'NEITHER_IN_MEMBERS_BUT_SIMILAR': 'Neither QID in members but similar definitions',
+    'ONE_IN_MEMBERS_DESC_MISMATCH': 'One QID in members, definition mismatch',
+    'ONE_IN_MEMBERS_MEDIUM_SIM': 'One QID in members, medium similarity',
+    # P5063 categories
+    'DISSIMILAR_QIDS': 'Dissimilar QIDs',
+    'DUPLICATE_LABELS': 'Duplicate labels',
+    'MEDIUM_SIMILAR_QIDS': 'Medium similar QIDs',
+    'MULTIPLE_ILIS_HIGH_SIM': 'Multiple ILIs, high similarity',
+    'MULTIPLE_ILIS_POS_DIFFERENCE': 'Multiple ILIs, different POS',
+    'SIMILAR_QIDS': 'Similar QIDs',
+}
+
+
+def get_category_label(category):
+    """Get human-readable label for a category."""
+    return CATEGORY_LABELS.get(category, category)
+
 # File paths
 # Note: These would need to be generated or fetched
 OEWN_MAPPINGS = DATA_DIR / "oewn_mappings.csv"  # Would need to be generated
@@ -146,7 +171,8 @@ def build_comparison_table():
             'synset_members': synset_members,
             'synset_source': synset_source,
             'ili': v.get('synset_ili', ''),
-            'category': category,
+            'category': get_category_label(category),
+            'category_raw': category,
             'is_violation': 'TRUE' if is_real else 'FALSE',
             'violation_type': 'DUPLICATE_P8814' if is_real else 'VALID',
             'has_fix_proposed': 'TRUE' if has_fix else 'FALSE',
@@ -198,7 +224,8 @@ def build_comparison_table():
             'synset_members': synset_members,
             'synset_source': synset_source,
             'ili': ili,
-            'category': category,
+            'category': get_category_label(category),
+            'category_raw': category,
             'is_violation': 'TRUE' if is_real else 'FALSE',
             'violation_type': 'DUPLICATE_P5063' if is_real else 'VALID',
             'has_fix_proposed': 'TRUE' if has_fix else 'FALSE',
@@ -225,6 +252,7 @@ def build_comparison_table():
         'synset_source',
         'ili',
         'category',
+        'category_raw',
         'is_violation',
         'violation_type',
         'has_fix_proposed',
