@@ -79,6 +79,9 @@ CSS = """
         .toc .toc-level-3 { padding-left: 40px; color: #666; }
         .toc-button { padding: 8px 16px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; margin-bottom: 10px; }
         .toc-button:hover { background: #0055aa; }
+        .violation-table a, .summary-table a { color: #0066cc; text-decoration: none; }
+        .violation-table a:hover, .summary-table a:hover { text-decoration: underline; }
+        .external-link-icon::after { content: ' 🔗'; font-size: 0.8em; }
         .section { margin: 15px 0; border: 1px solid #eee; border-radius: 8px; overflow: hidden; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .section.active { border-color: #0066cc; box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
         .section-header { padding: 15px 20px; background: #0066cc; color: white; cursor: pointer; font-size: 1.2em; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
@@ -185,6 +188,39 @@ def escape_html(text):
     return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
 
 
+def link_qid(qid):
+    """Create a link to Wikidata for a QID."""
+    if not qid or qid == '-' or qid == 'None':
+        return '-' 
+    # Handle multiple QIDs (pipe-separated)
+    if '|' in qid:
+        parts = [f'<a href="https://www.wikidata.org/wiki/{part.strip()}" target="_blank">{part.strip()}</a>' for part in qid.split('|')]
+        return ' | '.join(parts)
+    return f'<a href="https://www.wikidata.org/wiki/{qid}" target="_blank">{qid}</a>'
+
+
+def link_synset(synset_id):
+    """Create a link to WordNet browser for a synset ID."""
+    if not synset_id or synset_id == '-' or synset_id == 'None':
+        return '-' 
+    # Handle multiple synsets (pipe-separated)
+    if '|' in synset_id:
+        parts = [f'<a href="https://wordnet.princeton.edu/document?synset={part.strip()}" target="_blank">{part.strip()}</a>' for part in synset_id.split('|')]
+        return ' | '.join(parts)
+    return f'<a href="https://wordnet.princeton.edu/document?synset={synset_id}" target="_blank">{synset_id}</a>'
+
+
+def link_ili(ili):
+    """Create a link to ILI in the Global WordNet Association."""
+    if not ili or ili == '-' or ili == 'None':
+        return '-' 
+    # Handle multiple ILIs (pipe-separated)
+    if '|' in ili:
+        parts = [f'<a href="https://ili.globalwordnet.org/i/{part.strip()}" target="_blank">{part.strip()}</a>' for part in ili.split('|')]
+        return ' | '.join(parts)
+    return f'<a href="https://ili.globalwordnet.org/i/{ili}" target="_blank">{ili}</a>'
+
+
 def generate_rows(rows, is_p5063=False):
     html_parts = []
     for row in rows:
@@ -192,18 +228,26 @@ def generate_rows(rows, is_p5063=False):
         cls = 'real-violation' if is_real else 'valid-keep'
         
         if is_p5063:
+            # For P5063, the first column is ILI or QID
+            ili_or_qid = row.get('ili', row.get('qid', ''))
+            # Check if it looks like an ILI (starts with i) or QID (starts with Q)
+            if ili_or_qid and ili_or_qid.startswith('i'):
+                first_col = link_ili(ili_or_qid)
+            else:
+                first_col = link_qid(ili_or_qid)
+            
             html_parts.append(f'<tr class="{cls}" data-category="{escape_html(row.get("category",""))}" data-violation="{row.get("is_real_violation","")}">')
-            html_parts.append(f'<td>{escape_html(row.get("ili", row.get("qid","")))}</td>')
+            html_parts.append(f'<td>{first_col}</td>')
             html_parts.append(f'<td>{escape_html(row.get("wikidata_label",""))}</td>')
-            html_parts.append(f'<td>{escape_html(row.get("synset_id",""))}</td>')
+            html_parts.append(f'<td>{link_synset(row.get("synset_id",""))}</td>')
             html_parts.append(f'<td>{escape_html(row.get("synset_definition",""))}</td>')
             html_parts.append(f'<td>{escape_html(row.get("wikidata_description",""))}</td>')
             html_parts.append(f'<td>{escape_html(row.get("violation_type",""))}</td>')
         else:
             html_parts.append(f'<tr class="{cls}" data-category="{escape_html(row.get("category",""))}" data-violation="{row.get("is_real_violation","")}">')
-            html_parts.append(f'<td>{escape_html(row.get("qid",""))}</td>')
+            html_parts.append(f'<td>{link_qid(row.get("qid",""))}</td>')
             html_parts.append(f'<td>{escape_html(row.get("wikidata_label",""))}</td>')
-            html_parts.append(f'<td>{escape_html(row.get("synset_id",""))}</td>')
+            html_parts.append(f'<td>{link_synset(row.get("synset_id",""))}</td>')
             html_parts.append(f'<td>{escape_html(row.get("synset_definition",""))}</td>')
             html_parts.append(f'<td>{escape_html(row.get("wikidata_description",""))}</td>')
         
