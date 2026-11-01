@@ -10,10 +10,12 @@ Wordnet2Wikidata-Mappings/
 ├── docs/
 │   ├── backlog_import.md                      # Detailed workflow and methodology for importing validated mappings via QuickStatements
 │   ├── comparison_pipeline.md                 # Pipeline design documentation with mermaid diagrams and use cases
-│   └── constraint_violation_analysis.md        # Methodology and findings for P5063/P8814 constraint violation analysis
+│   ├── constraint_violation_analysis.md        # Methodology and findings for P5063/P8814 constraint violation analysis
+│   └── SYSTEM_ARCHITECTURE.md                 # Complete system architecture documentation
 ├── scripts/
 │   ├── backlog_to_quickstatements.py         # Transforms cleaned backlog CSVs into QuickStatements TSV format for Wikidata import
 │   ├── build_comparison_table.py             # Builds verification comparison table from merged_mapped.csv and wikidata_wordnet_links.csv
+│   ├── build_full_comparison.py              # Builds comprehensive comparison table from violations + QuickStatements with fix tracking
 │   ├── categorize_all_final.py               # Final categorization with 100% coverage (0% REVIEW) for all violations
 │   ├── categorize_violations.py              # Initial categorization of P5063/P8814 violations as real errors vs valid duplicates
 │   ├── categorize_violations_enhanced.py     # Enhanced categorization with similarity matching and confidence scores
@@ -23,7 +25,9 @@ Wordnet2Wikidata-Mappings/
 │   ├── extract_yaml.py                       # Extracts synset entries with Wikidata mappings from OEWN/OENN YAML sources
 │   ├── fetch_violations.py                   # Queries Wikidata SPARQL for P5063/P8814 constraint violations, joins with OEWN/OENN data
 │   ├── fetch_wikidata.py                     # Queries Wikidata SPARQL endpoint to fetch all entities linked via P5063 (ILI) or P8814 (synset ID)
+│   ├── generate_comprehensive_dashboard.py  # Generates comprehensive HTML dashboard with 6 tabs including comparison table
 │   ├── generate_dashboard.py                 # Generates static HTML dashboard with interactive tables and filters
+│   ├── generate_proposals_v2.py              # Generates QuickStatements fixes for constraint violations (v2 with improved logic)
 │   ├── submit_to_quickstatements.sh          # Shell script to submit QuickStatements batch via API for automated Wikidata import
 │   └── verify_import.py                      # Compares old vs new comparison tables to verify successful import of statements
 └── data/
@@ -41,9 +45,14 @@ Wordnet2Wikidata-Mappings/
         │   ├── p8814_violations_final.csv           # P8814 final categorization (0% REVIEW)
         │   ├── missing_ilis.csv                     # Synsets with QIDs but no ILI values
         │   ├── missing_ilis_verified.csv           # Missing ILIs with verification columns
-        │   └── violations_dashboard.html           # Static HTML dashboard with interactive tables
-        ├── comparison_table.csv               # Main comparison table with 22,670 candidate pairs and match signals
-        └── ...                                # Other files used for producing quickstatements
+        │   ├── violations_dashboard.html           # Static HTML dashboard with interactive tables
+        │   ├── comprehensive_dashboard.html        # Comprehensive dashboard with 6 tabs and comparison table
+        │   ├── full_comparison_table.csv           # Comparison table tracking all violations + proposed fixes (2,354 rows)
+        │   ├── proposal_summary_v2.txt             # Summary of all proposed fixes
+        │   └── quickstatements/                    # QuickStatements for applying fixes
+        │       ├── p5063_fixes_quickstatements.txt
+        │       └── p8814_fixes_quickstatements.txt
+        └── comparison_table.csv               # Main comparison table with 22,670 candidate pairs and match signals
 ```
 
 ## Overview
@@ -109,6 +118,29 @@ This project provides a complete pipeline for:
 - **P8814**: WordNet synset ID - Links Wikidata entity to WordNet synset
 - **P5063**: Interlingual Index (ILI) - Links Wikidata entity to cross-lingual concept
 
+## Constraint Violation Analysis
+
+The system includes comprehensive analysis of Wikidata constraint violations for P5063 and P8814 properties:
+
+### Key Features
+
+- **Automated Fetching**: SPARQL queries fetch live violation data from Wikidata
+- **Categorization**: Automatic classification of violations as real errors or valid duplicates
+- **Similarity Matching**: Uses semantic similarity (label, definition, synset members) to score mappings
+- **Proposal Generation**: Generates QuickStatements to fix real violations
+- **Comprehensive Tracking**: Full comparison table tracks all violations and their proposed fixes
+
+### Statistics (as of current data)
+
+- **P8814 Violations**: 1,977 total, 856 real violations identified
+- **P5063 Violations**: 784 total, 312 real violations identified
+- **QuickStatements Generated**: 440 P8814 fixes + 75 P5063 fixes = 515 total
+- **Comparison Table**: 2,354 rows tracking all violations + fix status
+
+### Workflow
+
+See the [Constraint Violation Analysis](#constraint-violation-analysis) section below for detailed commands.
+
 ## Quick Start
 
 ### Core Pipeline
@@ -168,8 +200,17 @@ python scripts/categorize_violations_enhanced.py
 # Final categorization with 100% coverage (0% REVIEW)
 python scripts/categorize_all_final.py
 
+# Generate QuickStatements fixes for violations
+python scripts/generate_proposals_v2.py
+
+# Build comprehensive comparison table with fix tracking
+python scripts/build_full_comparison.py
+
 # Generate interactive HTML dashboard
 python scripts/generate_dashboard.py
+
+# Generate comprehensive mission control dashboard
+python scripts/generate_comprehensive_dashboard.py
 
 # Output files in data/output/20260929/:
 # - p5063_violations_from_wd.csv
@@ -181,6 +222,11 @@ python scripts/generate_dashboard.py
 # - p8814_violations_enhanced.csv
 # - p8814_violations_final.csv
 # - violations_dashboard.html
+# - comprehensive_dashboard.html
+# - full_comparison_table.csv
+# - quickstatements/p5063_fixes_quickstatements.txt
+# - quickstatements/p8814_fixes_quickstatements.txt
+# - proposal_summary_v2.txt
 ```
 
 ## Documentation
@@ -188,4 +234,6 @@ python scripts/generate_dashboard.py
 - See `docs/backlog_import.md` for detailed import methodology
 - See `docs/comparison_pipeline.md` for pipeline architecture and design decisions
 - See `docs/constraint_violation_analysis.md` for P5063/P8814 constraint violation analysis methodology
-- See `data/output/20260929/violations_dashboard.html` for interactive analysis dashboard
+- See `docs/SYSTEM_ARCHITECTURE.md` for complete system architecture and component interactions
+- See `data/output/20260929/violations_dashboard.html` for interactive violation analysis dashboard
+- See `data/output/20260929/comprehensive_dashboard.html` for comprehensive mission control dashboard with comparison table
