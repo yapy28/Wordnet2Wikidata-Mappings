@@ -14,13 +14,16 @@ Wordnet2Wikidata-Mappings/
 ├── scripts/
 │   ├── backlog_to_quickstatements.py         # Transforms cleaned backlog CSVs into QuickStatements TSV format for Wikidata import
 │   ├── build_comparison_table.py             # Builds verification comparison table from merged_mapped.csv and wikidata_wordnet_links.csv
-│   ├── categorize_violations.py              # Categorizes P5063/P8814 violations as real errors vs valid duplicates
+│   ├── categorize_all_final.py               # Final categorization with 100% coverage (0% REVIEW) for all violations
+│   ├── categorize_violations.py              # Initial categorization of P5063/P8814 violations as real errors vs valid duplicates
+│   ├── categorize_violations_enhanced.py     # Enhanced categorization with similarity matching and confidence scores
 │   ├── check_qids.py                         # Validates that QIDs in the import file still exist on Wikidata
 │   ├── clean_backlogs.py                     # Removes entries with empty, missing, or invalid ILI values from backlog CSVs
 │   ├── enhance_multiqid_review.py            # Adds hypernym chain column and semantic scores to multi_qid_review.csv
 │   ├── extract_yaml.py                       # Extracts synset entries with Wikidata mappings from OEWN/OENN YAML sources
 │   ├── fetch_violations.py                   # Queries Wikidata SPARQL for P5063/P8814 constraint violations, joins with OEWN/OENN data
 │   ├── fetch_wikidata.py                     # Queries Wikidata SPARQL endpoint to fetch all entities linked via P5063 (ILI) or P8814 (synset ID)
+│   ├── generate_dashboard.py                 # Generates static HTML dashboard with interactive tables and filters
 │   ├── submit_to_quickstatements.sh          # Shell script to submit QuickStatements batch via API for automated Wikidata import
 │   └── verify_import.py                      # Compares old vs new comparison tables to verify successful import of statements
 └── data/
@@ -30,10 +33,15 @@ Wordnet2Wikidata-Mappings/
         ├── 20260929/                          # Date-stamped output for constraint violation analysis
         │   ├── p5063_violations_from_wd.csv         # P5063 violations with synset data from SPARQL
         │   ├── p5063_violations_categorized.csv     # P5063 with category/is_real_violation columns
+        │   ├── p5063_violations_enhanced.csv        # P5063 with similarity matching and confidence scores
+        │   ├── p5063_violations_final.csv           # P5063 final categorization (0% REVIEW)
         │   ├── p8814_violations_from_wd.csv         # P8814 violations with synset data from SPARQL
         │   ├── p8814_violations_categorized.csv     # P8814 with category/is_real_violation columns
+        │   ├── p8814_violations_enhanced.csv        # P8814 with similarity matching and confidence scores
+        │   ├── p8814_violations_final.csv           # P8814 final categorization (0% REVIEW)
         │   ├── missing_ilis.csv                     # Synsets with QIDs but no ILI values
-        │   └── missing_ilis_verified.csv           # Missing ILIs with verification columns
+        │   ├── missing_ilis_verified.csv           # Missing ILIs with verification columns
+        │   └── violations_dashboard.html           # Static HTML dashboard with interactive tables
         ├── comparison_table.csv               # Main comparison table with 22,670 candidate pairs and match signals
         └── ...                                # Other files used for producing quickstatements
 ```
@@ -88,9 +96,12 @@ This project provides a complete pipeline for:
 ```
 1. Fetch violations:    fetch_violations.py → p5063_violations_from_wd.csv, p8814_violations_from_wd.csv
 2. Categorize:           categorize_violations.py → p5063_violations_categorized.csv, p8814_violations_categorized.csv
-3. Review:              Manually review REVIEW/TRUE categories
-4. Generate fixes:       Create QuickStatements removal commands for real violations
-5. Apply fixes:         Submit to Wikidata via QuickStatements
+3. Enhanced analysis:    categorize_violations_enhanced.py → Similarity matching with confidence scores
+4. Final categorization: categorize_all_final.py → 100% coverage with 0% REVIEW
+5. Generate dashboard:   generate_dashboard.py → Static HTML dashboard (violations_dashboard.html)
+6. Review:              Manually review categories via dashboard (optional)
+7. Generate fixes:       Create QuickStatements removal commands for real violations
+8. Apply fixes:         Submit to Wikidata via QuickStatements
 ```
 
 ## Properties Used
@@ -151,11 +162,25 @@ python scripts/fetch_violations.py
 # Categorize violations (identifies real vs false positives)
 python scripts/categorize_violations.py
 
-# Output files in data/output/YYYYMMDD/:
+# Enhanced categorization with similarity matching
+python scripts/categorize_violations_enhanced.py
+
+# Final categorization with 100% coverage (0% REVIEW)
+python scripts/categorize_all_final.py
+
+# Generate interactive HTML dashboard
+python scripts/generate_dashboard.py
+
+# Output files in data/output/20260929/:
 # - p5063_violations_from_wd.csv
 # - p5063_violations_categorized.csv
+# - p5063_violations_enhanced.csv
+# - p5063_violations_final.csv
 # - p8814_violations_from_wd.csv
 # - p8814_violations_categorized.csv
+# - p8814_violations_enhanced.csv
+# - p8814_violations_final.csv
+# - violations_dashboard.html
 ```
 
 ## Documentation
@@ -163,3 +188,4 @@ python scripts/categorize_violations.py
 - See `docs/backlog_import.md` for detailed import methodology
 - See `docs/comparison_pipeline.md` for pipeline architecture and design decisions
 - See `docs/constraint_violation_analysis.md` for P5063/P8814 constraint violation analysis methodology
+- See `data/output/20260929/violations_dashboard.html` for interactive analysis dashboard
