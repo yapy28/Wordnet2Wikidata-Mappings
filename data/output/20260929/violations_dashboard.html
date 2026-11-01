@@ -62,7 +62,7 @@
         .total-stats { font-size: 1.1em; color: #555; margin: 10px 0; }
         .date-stamp { color: #888; font-size: 0.9em; text-align: right; margin-top: 10px; }
         .summary-table p, .summary-table ol, .summary-table ul { padding: 15px; }
-        .toc { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px; margin: 20px 0; position: sticky; top: 20px; z-index: 100; }
+        .toc { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px; margin: 20px 0; }
         .toc h2 { margin-top: 0; }
         .toc ul { list-style: none; padding-left: 0; }
         .toc li { padding: 5px 0; }
@@ -94,13 +94,14 @@
 <body>
     <div class="container">
         <h1>WordNet2Wikidata - Constraint Violation Analysis</h1>
-        <div class="date-stamp">Generated: 2026-11-01 10:32:22</div>
+        <div class="date-stamp">Generated: 2026-11-01 10:36:34</div>
         
         <div class="toc">
             <h2>Table of Contents</h2>
             <button onclick="toggleAllSections()" class="toc-button">Toggle All Sections</button>
             <ul>
                 <li class="toc-level-1"><a href="#executive-summary" onclick="scrollToSection('executive-summary'); return false;">Executive Summary</a></li>
+                <li class="toc-level-1"><a href="#background" onclick="scrollToSection('background'); return false;">Background & History</a></li>
                 <li class="toc-level-1"><a href="#p8814-section" onclick="scrollToSection('p8814-section'); return false;">P8814 Violations (1989)</a>
                     <ul>
                         <li class="toc-level-2"><a href="#p8814-categories" onclick="scrollToSection('p8814-categories'); return false;">Category Breakdown</a></li>
@@ -133,6 +134,57 @@
                     <tr><td><strong>P5063 (ILI)</strong></td><td>784</td><td>312</td><td>472</td><td>39.8%</td></tr>
                     <tr><td><strong>Total</strong></td><td><strong>2773</strong></td><td><strong>1176</strong></td><td><strong>1597</strong></td><td><strong>42.4%</strong></td></tr>
                 </table>
+            </div>
+        </div>
+        
+        <!-- Background Section -->
+        <div class="section" id="background">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>Background & History</h2>
+                <span class="toggle-indicator">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="summary-table">
+                    <p><strong>Properties Analyzed:</strong></p>
+                    <ul>
+                        <li><strong>P5063</strong>: Interlingual Index (ILI) - Single-value property linking a Wikidata entity to a concept in the Global WordNet Association's Collaborative Interlingual Index</li>
+                        <li><strong>P8814</strong>: WordNet 3.1 Synset ID - Unique-value property linking a Wikidata entity to a WordNet synset</li>
+                    </ul>
+                    <p><strong>Constraint Types:</strong></p>
+                    <table>
+                        <tr><th>Property</th><th>Constraint</th><th>Meaning</th><th>Violation Type</th></tr>
+                        <tr><td>P5063</td><td>Single value</td><td>Each Wikidata item should have at most one ILI</td><td>Item has multiple ILIs</td></tr>
+                        <tr><td>P5063</td><td>Unique value</td><td>Each ILI should map to only one Wikidata item</td><td>ILI maps to multiple items</td></tr>
+                        <tr><td>P8814</td><td>Unique value</td><td>Each synset ID should map to only one Wikidata item</td><td>Synset maps to multiple items</td></tr>
+                    </table>
+                    <p><strong>Initial Problem (from Wikidata reports):</strong></p>
+                    <ul>
+                        <li>P5063: 17 single-value + 178 unique-value violations = <strong>195 total</strong></li>
+                        <li>P8814: <strong>2,146 violations</strong> (synsets with multiple QIDs)</li>
+                        <li>Note: Our live SPARQL query found more violations as Wikidata has grown</li>
+                    </ul>
+                    <p><strong>Initial Approach (Discarded):</strong></p>
+                    <ul>
+                        <li>Parsed static markdown files from Wikidata constraint report page</li>
+                        <li>Abandoned because: static data, parsing complexity, maintenance burden</li>
+                        <li>Files deleted: P5063violations.md, P8814violations.md, missingILIs.csv</li>
+                    </ul>
+                    <p><strong>Current Approach:</strong></p>
+                    <ul>
+                        <li>Direct SPARQL queries via <code>fetch_violations.py</code></li>
+                        <li>Always current data from Wikidata</li>
+                        <li>Cross-references with OEWN/OENN YAML to get synset definitions, members, and metadata</li>
+                        <li>Joins with source data to provide full context for each violation</li>
+                    </ul>
+                    <p><strong>Key Insights:</strong></p>
+                    <ul>
+                        <li>Many "violations" are actually <strong>valid mappings</strong> representing different perspectives</li>
+                        <li>Same entity can have multiple ILIs from OEWN and OENN (different names for same thing)</li>
+                        <li>Same concept can have different parts of speech (noun vs verb)</li>
+                        <li>Polysemy: single word with multiple meanings, all valid</li>
+                        <li>True errors are duplicate ILIs added by mistake or stale mappings</li>
+                    </ul>
+                </div>
             </div>
         </div>
         
