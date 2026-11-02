@@ -218,6 +218,11 @@ python scripts/crosscheck_sources.py
 # Generate QuickStatements fixes for violations (source repos win; reasons in keep_decisions.csv)
 python scripts/generate_proposals_v2.py
 
+# Human decisions per duplicate group (optional): keep / leave / defer + note.
+# Record them in the dashboard's Review queue tab and export, or edit manual_review/decisions.csv
+# directly (template downloadable from the dashboard). Decisions override the source pick
+# and the heuristics; leave/defer groups get no removals.
+
 # Build comprehensive comparison table with fix tracking
 python scripts/build_full_comparison.py
 
