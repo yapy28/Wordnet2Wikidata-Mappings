@@ -269,7 +269,7 @@ Before running all QuickStatements:
 
 - [Wikidata Constraint Violations/P5063](https://www.wikidata.org/wiki/Wikidata:Database_reports/Constraint_violations/P5063)
 - [Wikidata Constraint Violations/P8814](https://www.wikidata.org/wiki/Wikidata:Database_reports/Constraint_violations/P8814)
-- [Global WordNet Association ILI](https://ili.globalwordnet.org/)
+- [Global WordNet Association ILI](https://globalwordnet.github.io/cili/)
 - [English WordNet (OEWN)](https://github.com/globalwordnet/english-wordnet)
 - [English NameNet (OENN)](https://github.com/globalwordnet/english-namenet)
 

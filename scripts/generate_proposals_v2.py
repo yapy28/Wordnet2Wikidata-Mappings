@@ -12,7 +12,7 @@ This script:
 """
 
 import csv
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 from datetime import datetime
 
@@ -21,7 +21,165 @@ QUICKSTATEMENTS_DIR = OUTPUT_DIR / "quickstatements"
 MANUAL_REVIEW_DIR = OUTPUT_DIR / "manual_review"
 
 
-def process_p8814_violations():
+WEAK_REASONS = {"fallback", "score_tie"}  # keep chosen without real evidence -> needs a human
+DECISION_ACTIONS = {"keep", "leave", "defer"}
+
+
+def load_decisions(path=None):
+    """Human decisions from manual_review/decisions.csv (optional; one row per duplicate group).
+
+    action=keep: keep keep_qid, remove the statement from every other QID in the group.
+    action=leave: no removals - the group is treated as a valid duplicate.
+    action=defer: no removals yet - the group stays in the review queue.
+    Rows with an empty action are template placeholders and are ignored.
+    Decisions beat the source pick, which beats the heuristics (reason 'decision').
+    """
+    path = path or OUTPUT_DIR / "manual_review" / "decisions.csv"
+    decisions = {}
+    if not Path(path).exists():
+        return decisions
+    with open(path, newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            key = (row.get("prop", "").strip(), row.get("value", "").strip())
+            action = (row.get("action") or "").strip().lower()
+            if not action:
+                continue
+            if action not in DECISION_ACTIONS:
+                raise ValueError(f"decisions.csv: unknown action {action!r} for {key[0]} {key[1]}")
+            if key in decisions:
+                raise ValueError(f"decisions.csv: duplicate decision for {key[0]} {key[1]}")
+            decisions[key] = {"action": action,
+                              "keep_qid": (row.get("keep_qid") or "").strip(),
+                              "note": (row.get("note") or "").strip()}
+    return decisions
+
+
+def check_unknown_decisions(decisions, seen_groups):
+    """Every decision must name a real duplicate group; error instead of ignoring."""
+    unknown = sorted(set(decisions) - seen_groups)
+    if unknown:
+        raise ValueError("decisions.csv names groups with no real violation: "
+                         + "; ".join(f"{p} {v}" for p, v in unknown))
+
+
+def apply_decision(decision, qid_data_list, decision_key):
+    """Turn a group's decision into (keep_qid, reason) or a hold action.
+
+    Returns ('hold', reason) for leave/defer; ('keep'/'remove' handling stays with the caller).
+    """
+    if decision["action"] == "leave":
+        return "hold", "decision_leave"
+    if decision["action"] == "defer":
+        return "hold", "defer"
+    if decision["action"] == "keep":
+        group_qids = [q["qid"] for q in qid_data_list]
+        if decision["keep_qid"] not in group_qids:
+            raise ValueError(f"decisions.csv: keep_qid {decision['keep_qid']} is not in the "
+                             f"group {decision_key[0]} {decision_key[1]} {group_qids}")
+        return decision["keep_qid"], "decision"
+    raise ValueError(f"unknown action {decision['action']!r}")
+
+
+def load_source_picks(path=None):
+    """(prop, value) -> QID that english-wordnet / english-namenet name, from crosscheck_sources.py."""
+    path = path or OUTPUT_DIR / "source_crosscheck.csv"
+    picks = {}
+    if Path(path).exists():
+        with open(path, newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                if row["source_pick"]:
+                    picks[(row["prop"], row["value"])] = row["source_pick"]
+    return picks
+
+
+def choose_keep_p8814(qid_data_list, source_pick=None):
+    """Return (qid_to_keep, reason). The source repos' QID wins; heuristics only fill the gaps."""
+    qids = [q["qid"] for q in qid_data_list]
+    if source_pick in qids:
+        return source_pick, "source"
+
+    notes = qid_data_list[0].get("notes", "")
+
+    # Notes name the QID that is in the synset members
+    if "QID in members:" in notes:
+        try:
+            return notes.split("QID in members:")[1].strip().split(",")[0].strip(), "members_note"
+        except (IndexError, AttributeError):
+            pass
+
+    # Similarity scores from the notes
+    if "Similarity:" in notes:
+        try:
+            similarities = {}
+            for part in notes.split("Similarity:")[1].strip().split(","):
+                part = part.strip()
+                if ":" in part:
+                    similarities[part.split(":")[0].strip()] = int(part.split(":")[1].strip().split("|")[0].strip())
+            if similarities:
+                return max(similarities, key=similarities.get), "similarity_note"
+        except (IndexError, ValueError):
+            pass
+
+    members = qid_data_list[0].get("synset_members", "").lower()
+    if members:
+        for qd in qid_data_list:
+            label = qd.get("wd_label", "").lower()
+            if label and label in members:
+                return qd["qid"], "label_in_members"
+
+    definition = qid_data_list[0].get("synset_definition", "").lower()
+    if definition:
+        for qd in qid_data_list:
+            label = qd.get("wd_label", "").lower()
+            if label and label in definition:
+                return qd["qid"], "label_in_definition"
+
+    return qid_data_list[0]["qid"], "fallback"
+
+
+def choose_keep_p5063(qid_data_list, source_pick=None):
+    """Return (qid_to_keep, reason): source repos first, then label/description similarity scoring."""
+    qids = [q["qid"] for q in qid_data_list]
+    if source_pick in qids:
+        return source_pick, "source"
+
+    scored = []
+    for qd in qid_data_list:
+        wd_label = qd.get("wd_label", "").lower()
+        wd_desc = qd.get("wd_description", "").lower()
+        synset_def = qd.get("synset_definition", "").lower()
+        synset_members = qd.get("synset_members", "").lower()
+
+        score = 0
+        if wd_label:
+            members_list = synset_members.split("|") if synset_members else []
+            if any(member.strip() in wd_label or wd_label in member.strip() for member in members_list):
+                score += 10
+        if wd_label and synset_def and wd_label in synset_def:
+            score += 5
+        if wd_desc and synset_def and (wd_desc in synset_def or synset_def in wd_desc):
+            score += 3
+        scored.append((score, qd["qid"]))
+
+    if not scored:
+        return None, "none"
+    best = max(s for s, _ in scored)
+    winners = [q for s, q in scored if s == best]
+    reason = "score" if best > 0 and len(winners) == 1 else ("score_tie" if best > 0 else "fallback")
+    return winners[0], reason
+
+
+def write_keep_log(keep_log):
+    path = OUTPUT_DIR / "keep_decisions.csv"
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=["prop", "value", "keep_qid", "reason", "remove_qids", "note"],
+                           restval="")
+        w.writeheader()
+        w.writerows(keep_log)
+    print(f"  keep decisions + reasons: {path}")
+
+
+def process_p8814_violations(source_picks, decisions, keep_log, seen_groups):
     """Process P8814 violations and generate proposals."""
     input_file = OUTPUT_DIR / "p8814_violations_final.csv"
     
@@ -57,63 +215,21 @@ def process_p8814_violations():
             # Only one QID for this synset - shouldn't be a violation
             # But if it is, skip it
             continue
-        
-        # Determine which QID to keep
-        notes = qid_data_list[0].get('notes', '')
-        category = qid_data_list[0].get('category', '')
-        
-        keep_qid = None
-        
-        # Try multiple strategies to determine keep_qid
-        
-        # Strategy 1: Check if notes specify "QID in members"
-        if "QID in members:" in notes:
-            try:
-                keep_qid = notes.split("QID in members:")[1].strip().split(',')[0].strip()
-            except (IndexError, AttributeError):
-                pass
-        
-        # Strategy 2: Use similarity scores from notes
-        if keep_qid is None and "Similarity:" in notes:
-            try:
-                sim_part = notes.split("Similarity:")[1].strip()
-                # Parse similarity scores
-                similarities = {}
-                for part in sim_part.split(','):
-                    part = part.strip()
-                    if ':' in part:
-                        qid_in_notes = part.split(':')[0].strip()
-                        score = int(part.split(':')[1].strip().split('|')[0].strip())
-                        similarities[qid_in_notes] = score
-                if similarities:
-                    keep_qid = max(similarities, key=similarities.get)
-            except (IndexError, ValueError):
-                pass
-        
-        # Strategy 3: Check if QID label is in synset members
-        if keep_qid is None:
-            synset_members = qid_data_list[0].get('synset_members', '').lower()
-            if synset_members:
-                for qd in qid_data_list:
-                    wd_label = qd.get('wd_label', '').lower()
-                    if wd_label and wd_label in synset_members:
-                        keep_qid = qd['qid']
-                        break
-        
-        # Strategy 4: Check if QID label is in synset definition
-        if keep_qid is None:
-            synset_def = qid_data_list[0].get('synset_definition', '').lower()
-            if synset_def:
-                for qd in qid_data_list:
-                    wd_label = qd.get('wd_label', '').lower()
-                    if wd_label and wd_label in synset_def:
-                        keep_qid = qd['qid']
-                        break
-        
-        # Strategy 5: Use first QID as fallback (will need manual review)
-        if keep_qid is None:
-            keep_qid = qid_data_list[0]['qid']
-        
+        seen_groups.add(("P8814", synset_id))
+        decision = decisions.get(("P8814", synset_id))
+        if decision:
+            keep_or_hold, reason = apply_decision(decision, qid_data_list, ("P8814", synset_id))
+            if keep_or_hold == "hold":
+                keep_log.append({'prop': 'P8814', 'value': synset_id, 'keep_qid': '',
+                                 'reason': reason, 'remove_qids': '', 'note': decision['note']})
+                continue
+            keep_qid, reason = keep_or_hold, reason
+        else:
+            keep_qid, reason = choose_keep_p8814(qid_data_list, source_picks.get(('P8814', synset_id)))
+        keep_log.append({'prop': 'P8814', 'value': synset_id, 'keep_qid': keep_qid, 'reason': reason,
+                         'remove_qids': '|'.join(q['qid'] for q in qid_data_list if q['qid'] != keep_qid),
+                         'note': decision['note'] if decision else ''})
+
         # Generate QuickStatements for all QIDs except keep_qid
         for qd in qid_data_list:
             qid = qd['qid']
@@ -151,7 +267,7 @@ def process_p8814_violations():
     }
 
 
-def process_p5063_violations():
+def process_p5063_violations(source_picks, decisions, keep_log, seen_groups):
     """Process P5063 violations and generate proposals."""
     input_file = OUTPUT_DIR / "p5063_violations_final.csv"
     
@@ -193,44 +309,26 @@ def process_p5063_violations():
         if len(qid_data_list) == 1:
             # Only one QID for this ILI - shouldn't be a violation
             continue
-        
-        # Determine which QID to keep (the one that best matches the synset definition)
-        best_qid = None
-        best_score = -1
-        
-        for qd in qid_data_list:
-            wd_label = qd.get('wd_label', '').lower()
-            wd_desc = qd.get('wd_description', '').lower()
-            synset_def = qd.get('synset_definition', '').lower()
-            synset_members = qd.get('synset_members', '').lower()
-            
-            score = 0
-            
-            # Check if QID label is in synset members
-            if wd_label:
-                members_list = synset_members.split('|') if synset_members else []
-                if any(member.strip() in wd_label or wd_label in member.strip() for member in members_list):
-                    score += 10
-            
-            # Check if synset definition contains QID label
-            if wd_label and synset_def:
-                if wd_label in synset_def:
-                    score += 5
-            
-            # Check if QID description matches synset definition
-            if wd_desc and synset_def:
-                if wd_desc in synset_def or synset_def in wd_desc:
-                    score += 3
-            
-            if score > best_score:
-                best_score = score
-                best_qid = qd['qid']
-        
+        seen_groups.add(("P5063", ili))
+        decision = decisions.get(("P5063", ili))
+        if decision:
+            keep_or_hold, reason = apply_decision(decision, qid_data_list, ("P5063", ili))
+            if keep_or_hold == "hold":
+                keep_log.append({'prop': 'P5063', 'value': ili, 'keep_qid': '',
+                                 'reason': reason, 'remove_qids': '', 'note': decision['note']})
+                continue
+            best_qid, reason = keep_or_hold, reason
+        else:
+            best_qid, reason = choose_keep_p5063(qid_data_list, source_picks.get(('P5063', ili)))
+
         if best_qid is None:
             # Can't determine - needs manual review
             manual_review.extend(qid_data_list)
             continue
-        
+        keep_log.append({'prop': 'P5063', 'value': ili, 'keep_qid': best_qid, 'reason': reason,
+                         'remove_qids': '|'.join(q['qid'] for q in qid_data_list if q['qid'] != best_qid),
+                         'note': decision['note'] if decision else ''})
+
         # Generate QuickStatements for all QIDs except best_qid
         for qd in qid_data_list:
             qid = qd['qid']
@@ -332,17 +430,30 @@ NEXT STEPS:
 
 
 def main():
+    source_picks = load_source_picks()
+    if not source_picks:
+        print("WARNING: no source_crosscheck.csv - run scripts/crosscheck_sources.py first; "
+              "falling back to similarity heuristics only.")
+    decisions = load_decisions()
+    if decisions:
+        print(f"Loaded {len(decisions)} human decisions from manual_review/decisions.csv "
+              f"(decisions override the source pick and the heuristics)")
+    seen_groups = set()
+    keep_log = []
     print("Processing P8814 violations...")
-    p8814_stats = process_p8814_violations()
+    p8814_stats = process_p8814_violations(source_picks, decisions, keep_log, seen_groups)
     print(f"  ✓ Generated {p8814_stats['auto_fix']} QuickStatements")
     print(f"  ✓ Manual review: {p8814_stats['manual_review']}")
-    
+
     print("\nProcessing P5063 violations...")
-    p5063_stats = process_p5063_violations()
+    p5063_stats = process_p5063_violations(source_picks, decisions, keep_log, seen_groups)
     print(f"  ✓ Generated {p5063_stats['auto_fix']} QuickStatements")
     print(f"  ✓ Manual review: {p5063_stats['manual_review']}")
-    
+
+    check_unknown_decisions(decisions, seen_groups)
+    write_keep_log(keep_log)
     print("\n" + generate_summary(p8814_stats, p5063_stats))
+    print("Keep decisions by reason:", dict(Counter((k['prop'], k['reason']) for k in keep_log)))
     
     # Save summary to file
     summary_file = OUTPUT_DIR / "proposal_summary_v2.txt"

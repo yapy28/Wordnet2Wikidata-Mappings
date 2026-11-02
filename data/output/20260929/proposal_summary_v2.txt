@@ -3,12 +3,12 @@
 PROPOSAL GENERATION SUMMARY - v2
 ======================================================================
 
-Generated: 2026-11-01 11:28:18
+Generated: 2026-11-02 10:37:20
 
 P8814 (WordNet Synset ID) Violations:
   Total:           1,977
   Real Violations: 856
-  Auto-fix:        440 QuickStatements
+  Auto-fix:        438 QuickStatements
   Manual Review:   0
   Valid (No Fix):  1,121
   Unique Synsets:  416
@@ -18,7 +18,7 @@ P8814 (WordNet Synset ID) Violations:
 P5063 (ILI) Violations:
   Total:           377
   Real Violations: 147
-  Auto-fix:        75 QuickStatements
+  Auto-fix:        74 QuickStatements
   Manual Review:   0
   Valid (No Fix):  230
   Unique ILIs:     72
@@ -30,7 +30,7 @@ TOTALS:
 ======================================================================
   Total Violations:     2,354
   Real Violations:     1,003
-  Auto-fixable:         515
+  Auto-fixable:         512
   Manual Review:        0
   Valid (No Fix):       1,351
 

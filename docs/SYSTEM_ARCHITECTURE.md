@@ -40,7 +40,7 @@ These violations can be caused by:
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        MISSION CONTROL DASHBOARD                       │
-│                  (comprehensive_dashboard.html)                        │
+│                  (violations_dashboard.html)                          │
 └─────────────────────────────────────────────────────────────────────┘
                                        ▲
                                        │
@@ -241,7 +241,7 @@ manual_review/
 
 **Purpose:** Provide a unified, interactive view of the entire ecosystem.
 
-#### Main Dashboard: `comprehensive_dashboard.html`
+#### Main Dashboard: `violations_dashboard.html`
 
 **Features:**
 
@@ -540,8 +540,7 @@ python scripts/generate_fixes_from_comparison.py \
 
 | Script | Purpose | Input | Output |
 |--------|---------|-------|--------|
-| `generate_dashboard.py` | Generate violations dashboard | *categorized.csv, *final.csv | violations_dashboard.html |
-| `generate_comprehensive_dashboard.py` | Generate mission control dashboard | All output files | comprehensive_dashboard.html |
+| `generate_dashboard.py` | Generate the dashboard (single file, all rows embedded) | *final.csv, quickstatements/, manual_review/, missing_ilis_verified.csv | violations_dashboard.html |
 
 ---
 
@@ -568,7 +567,6 @@ Wordnet2Wikidata-Mappings/
 │   ├── generate_proposals.py
 │   ├── generate_proposals_v2.py
 │   ├── generate_dashboard.py
-│   ├── generate_comprehensive_dashboard.py
 │   └── ...
 └── data/
     └── output/
@@ -587,7 +585,6 @@ Wordnet2Wikidata-Mappings/
             ├── manual_review/
             │   ├── p8814_manual_review.csv
             │   └── p5063_manual_review.csv
-            ├── comprehensive_dashboard.html
             └── violations_dashboard.html
 ```
 

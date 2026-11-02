@@ -1,0 +1,4 @@
+prop,value,action,keep_qid,note
+P8814,01615818-n,leave,,WordNet links both QIDs deliberately (Polyborus plancus = crested caracara is a synonym pair); keep both statements
+P8814,01915807-n,leave,,Q272388 is a redirect item for Q202526; we keep redirects - no removal
+P5063,i110785,leave,,Cholestasis (Q1075923) and acholia (Q8187550) are two different conditions per the WordNet community; propose a WordNet-side synset split instead of removing a statement
