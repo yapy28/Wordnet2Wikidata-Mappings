@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from generate_proposals_v2 import WEAK_REASONS  # noqa: E402
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-OUTPUT_DIR = BASE_DIR / "data" / "output" / "20260929"
+OUTPUT_DIR = BASE_DIR / "data" / "output" / "20261101"
 IMPORT_DIR = BASE_DIR / "data" / "output" / "20260816"
 DASHBOARD_PATH = OUTPUT_DIR / "violations_dashboard.html"
 
@@ -244,10 +244,6 @@ def main(run_dir=None):
     file_specs = [
         ("p8814_violations_final.csv", "P8814 final categorisation (source of this dashboard)"),
         ("p5063_violations_final.csv", "P5063 final categorisation (784 raw rows = 377 unique QID/ILI pairs)"),
-        ("p8814_violations_enhanced.csv", "P8814 + similarity scores"),
-        ("p5063_violations_enhanced.csv", "P5063 + similarity scores"),
-        ("p8814_violations_categorized.csv", "P8814 first-pass categorisation"),
-        ("p5063_violations_categorized.csv", "P5063 first-pass categorisation"),
         ("p8814_violations_from_wd.csv", "P8814 raw SPARQL violations + synset data"),
         ("p5063_violations_from_wd.csv", "P5063 raw SPARQL violations + synset data"),
         ("quickstatements/p8814_fixes_quickstatements.txt", "P8814 removals (original format, see Fixes tab)"),
@@ -259,7 +255,6 @@ def main(run_dir=None):
         ("manual_review/p5063_manual_review.csv", "P5063 review queue (empty)"),
         ("missing_ilis_verified.csv", "Synsets with a QID but no ILI, verified"),
         ("missing_ilis.csv", "Synsets with a QID but no ILI, first pass"),
-        ("full_comparison_table.csv", "All violation rows + fix tracking (legacy export, superseded by the All tab)"),
         ("proposal_summary_v2.txt", "Proposal generation summary"),
     ]
     files = []
@@ -531,25 +526,6 @@ const violationCols = (extra = []) => [
 ];
 const reviewRows = [...D.p8814, ...D.p5063].filter(r => r.rev);
 
-/* ---------- interactive review decisions: browser-local, exported to decisions.csv ---------- */
-const decGroup = r => r.prop === 'P5063' ? r.ili : r.sid;
-const DKEY = r => r.prop + ' ' + decGroup(r);
-const decLoad = () => { try { return JSON.parse(localStorage.getItem('w2w_decisions') || '{}'); } catch { return {}; } };
-const decSave = d => { try { localStorage.setItem('w2w_decisions', JSON.stringify(d)); } catch {} };
-const csvq = s => { s = String(s ?? ''); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-const parseCsvLine = line => { const out = []; let cur = '', q = false;
-  for (let i = 0; i < line.length; i++) { const c = line[i];
-    if (q) { if (c === '"') { if (line[i+1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
-    else if (c === '"') q = true; else if (c === ',') { out.push(cur); cur = ''; } else cur += c; }
-  out.push(cur); return out; };
-const downloadText = (name, text, type='text/csv') => { const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([text], {type})); a.download = name; a.click(); };
-const decGroups = () => { const gs = {}; reviewRows.forEach(r => (gs[DKEY(r)] ||= []).push(r)); return gs; };
-const decCell = r => { const key = DKEY(r); const d = decLoad()[key];
-  return (d ? `<span class="pill ${d.action==='keep'?'keep':d.action==='leave'?'valid':'deferred'}">${d.action==='keep' ? 'Keep '+esc(d.keep_qid) : d.action==='leave' ? 'Leave group' : 'Deferred'}</span>${d.note ? `<div class="sub">${esc(d.note)}</div>` : ''}`
-      : '<span class="muted">undecided</span>')
-    + `<div class="sub">${d ? `<a href="#" data-dec="undo" data-key="${esc(key)}">undo</a>`
-      : `<a href="#" data-dec="keep" data-key="${esc(key)}" data-q="${esc(r.q)}">keep ${esc(r.q)}</a> · <a href="#" data-dec="leave" data-key="${esc(key)}">leave group</a> · <a href="#" data-dec="defer" data-key="${esc(key)}">defer</a>`}</div>`; };
 
 /* ---------- all-mappings table (import-pipeline comparison) ---------- */
 const chk = v => v ? '<span class="pill valid">✓</span>' : '<span class="muted">–</span>';
@@ -582,7 +558,20 @@ const tabs = [
   {id:'method', label:'Pipeline & methods'},
   {id:'files', label:'Files'},
 ].filter(t => t.id !== 'map' || D.mappings.length);
-$('#stamp').innerHTML = `Violations fetched ${S.data_date} · dashboard built ${S.generated} · <span class="tip end" tabindex="0">auto-generated — how to refresh<span class="box">This file is generated — don't edit it by hand; every table, stat and fix list is rebuilt from the CSVs at build time. To refresh the <i>All mappings</i> tab from the current OEWN/OENN repos and live Wikidata: <code>python scripts/refresh_mappings.py</code>. To re-render the HTML only (new CSVs, same data): <code>python scripts/generate_dashboard.py</code>, optionally <code>data/output/&lt;date&gt;</code> to render another run.</span></span>`;
+const HELP = {
+  overview: 'The big picture: how many duplicate mappings Wikidata has, how many are fine, and how many we propose to fix.',
+  map: 'Every WordNet synset that has a matching Wikidata item. Search it to look up any single mapping.',
+  p8814: 'Wikidata items that share the same WordNet synset ID. One row per item. Remove = we propose deleting the ID from this item; Keep = this item keeps it; Valid = the duplicate is fine.',
+  p5063: 'Wikidata items that share the same Interlingual Index (ILI) ID. One row per item, same colours as the P8814 tab.',
+  review: 'Duplicates where the evidence is thin, so a person should decide. Collaborators record their decisions in the shared Google Sheet.',
+  fixes: 'The statements we propose to remove from Wikidata, ready to paste into QuickStatements.',
+  missing: 'WordNet synsets that have a Wikidata item but no ILI on it yet.',
+  all: 'Every row from the P8814 and P5063 tabs in one searchable table.',
+  method: 'How the numbers were produced, step by step.',
+  files: 'The data files behind this dashboard.',
+};
+const intro = id => `<p class="muted">${HELP[id]}</p>`;
+$('#stamp').innerHTML = `Violations fetched ${S.data_date} · dashboard built ${S.generated} · <span class="tip end" tabindex="0">auto-generated<span class="box">Built automatically from the data files in this folder. Don't edit it by hand: run <code>python scripts/run_pipeline.py</code> to rebuild.</span></span>`;
 $('#tabbar').innerHTML = tabs.map(t => `<button class="tab" data-tab="${t.id}"${t.title ? ` title="${esc(t.title)}"` : ''}>${t.label}${t.n!==undefined ? `<span class="n">${fmt(t.n)}</span>` : ''}</button>`).join('') + `<button class="tab theme" id="theme" title="Toggle dark mode">◐ Theme</button>`;
 $('#panels').innerHTML = tabs.map(t => `<section class="panel" id="p-${t.id}"></section>`).join('');
 
@@ -593,61 +582,26 @@ function build(id) {
   const el = $('#p-'+id);
   if (id === 'overview') overview(el);
   if (id === 'map' && D.mappings.length) { const M = D.mstats;
-    el.innerHTML = `<div class="card"><p class="muted">The full mapping universe from the import pipeline: every OEWN/OENN synset with a candidate Wikidata QID — ${fmt(M.total)} pairs, snapshot ${esc(M.date)}, <code>${esc(M.path)}</code>. ${fmt(M.found)} (${pct(M.found, M.total)}) were already linked in Wikidata at comparison time; ${fmt(M.strong)} (${pct(M.strong, M.total)}) carry strong deterministic evidence (exact ${propLink('P8814')} synset ID, exact ${propLink('P5063')} ILI, or the QID label among the synset members). The violation tabs cover only the subset of this table that later broke the unique-value constraint. Large table — the view shows the first 500 rows; search or filter to narrow.</p><div id="t-map"></div></div>`;
+    el.innerHTML = `<div class="card">${intro('map')}<p class="muted">${fmt(M.total)} synsets as of ${esc(M.date)}; ${fmt(M.found)} (${pct(M.found, M.total)}) were already linked on Wikidata. Shows the first 500 rows: search or filter to narrow.</p><div id="t-map"></div></div>`;
     makeTable($('#t-map'), {rows:D.mappings, cols:mapCols(), sort:0, limit:500, filters:[
       {k:'j', label:'In Wikidata: any', opts:()=>[['1','Linked'],['0','Backlog (not linked)']], get:r=>r.j},
       {k:'src', label:'Source: any', opts:()=>[['OEWN','OEWN only'],['OENN','OENN only'],['both','Both repos']], get:r=>r.src.includes('+') ? 'both' : r.src},
       {k:'sig', label:'Evidence: any', opts:()=>[['strong','Strong (exact ID / ILI / label)'],['def','Definition overlap only'],['none','No signal']], get:r=>(r.s||r.i||r.m)?'strong':(r.d?'def':'none')}]}); }
-  if (id === 'p8814') { el.innerHTML = `<div class="card"><p class="muted">One row per (QID, synset) pair that violates the unique-value constraint on <b>${propLink('P8814')} (WordNet synset ID)</b>. <b>Remove</b> = statement to delete; <b>Keep</b> = the QID that retains the synset; <b>Valid</b> = legitimate duplicate, no fix.</p><div id="t-p8814"></div></div>`;
+  if (id === 'p8814') { el.innerHTML = `<div class="card">${intro('p8814')}<div id="t-p8814"></div></div>`;
     T.p8814 = makeTable($('#t-p8814'), {rows:D.p8814, cols:violationCols(), filters:[{k:'cat',label:'All categories',opts:catOpts(D.p8814),get:r=>r.cat},{k:'role',label:'All verdicts',opts:roleOpts,get:r=>r.role},...srcFilters]}); }
-  if (id === 'p5063') { el.innerHTML = `<div class="card"><p class="muted">One row per unique (QID, ILI) pair violating the unique-value constraint on <b>${propLink('P5063')} (Interlingual Index)</b> — the SPARQL export has ${fmt(S.p5063_raw)} raw rows, each pair repeated 2–4 times; duplicates are collapsed here.</p><div id="t-p5063"></div></div>`;
+  if (id === 'p5063') { el.innerHTML = `<div class="card">${intro('p5063')}<div id="t-p5063"></div></div>`;
     T.p5063 = makeTable($('#t-p5063'), {rows:D.p5063, cols:violationCols([{grp:'an', k:'vt', label:'Constraint'}]), filters:[{k:'cat',label:'All categories',opts:catOpts(D.p5063),get:r=>r.cat},{k:'role',label:'All verdicts',opts:roleOpts,get:r=>r.role},...srcFilters]}); }
-  if (id === 'review') { el.innerHTML = `<div class="card"><div class="alert warn"><b>${fmt(reviewRows.length)} rows in ${fmt(new Set(reviewRows.map(r=>r.prop+(r.prop==='P5063'?r.ili:r.sid))).size)} groups have a weak keep decision</b> — check these before running the removals. <span class="tip" tabindex="0">What makes a keep weak?<span class="box">The source repos don't name the kept QID, and either neither QID matches the synset (<i>Different concepts</i>, <i>Multiple QIDs with mismatches</i>) or the label/definition similarity scores tie (<i>score_tie</i> / <i>fallback</i>).</span></span>${S.manual_extra ? ` <span class="tip" tabindex="0">vs. the manual_review file<span class="box"><b>${fmt(S.manual_extra)}</b> of these rows are <i>not</i> in <code>manual_review/p8814_manual_review.csv</code> — that file predates the source cross-check.</span></span>` : ''}</div>
-    <div class="card"><h2>Decide here, export, re-run</h2>
-      <p class="muted">Pick <b>keep&nbsp;QID</b> (this item keeps the value, the others lose the statement), <b>leave&nbsp;group</b> (valid duplicate, nothing removed) or <b>defer</b> (hold the removals). Decisions are stored in this browser only — export them to <code>decisions.csv</code>, save it to <code>manual_review/decisions.csv</code> in the run folder, then re-run <code>generate_proposals_v2.py</code> and <code>generate_dashboard.py</code>. Human decisions override the source pick and the heuristics.</p>
-      <div class="toolbar"><button class="btn primary" id="decExport">Export decisions.csv</button><button class="btn" id="decImport">Import decisions.csv</button><button class="btn" id="decTemplate">Download template (all groups)</button><input type="file" id="decFile" accept=".csv" hidden><span class="muted" id="decCount"></span></div>
-      <div id="t-review"></div></div></div>`;
-    T.review = makeTable($('#t-review'), {rows:reviewRows, cols:[{k:'prop', label:'Property', render:r => propCell(r.prop), text:r => r.prop+' '+PROP[r.prop].n}, ...violationCols(), {k:'dec', label:'Your decision', cls:'wide', render:decCell, text:r => 'decision keep leave defer', sortKey:r => (decLoad()[DKEY(r)] || {action:''}).action}], sort:3, filters:[{k:'prop',label:'Both properties',opts:()=>[['P8814','P8814'],['P5063','P5063']],get:r=>r.prop},{k:'cat',label:'All categories',opts:catOpts(reviewRows),get:r=>r.cat},{k:'role',label:'All verdicts',opts:roleOpts,get:r=>r.role},...srcFilters]});
-    const wrap = $('#t-review', el).closest('.card');
-    const gs = decGroups();
-    const decCountUpd = () => { $('#decCount', wrap).textContent = `${Object.keys(decLoad()).length} of ${Object.keys(gs).length} review groups decided in this browser`; };
-    decCountUpd();
-    wrap.addEventListener('click', e => { const a = e.target.closest('[data-dec]'); if (!a) return; e.preventDefault();
-      const d = decLoad(); const key = a.dataset.key; const action = a.dataset.dec;
-      if (action === 'undo') { delete d[key]; }
-      else {
-        const note = (prompt(`Note for this "${action}" decision (optional, shown in the dashboard):`, '') || '').trim();
-        d[key] = {prop: key.slice(0, 5), value: key.slice(6), action, keep_qid: action === 'keep' ? a.dataset.q : '', note};
-      }
-      decSave(d); built['review'] = false; show('review', false); });
-    $('#decExport', wrap).onclick = () => { const lines = ['prop,value,action,keep_qid,note'];
-      Object.values(decLoad()).forEach(x => lines.push([x.prop, x.value, x.action, x.keep_qid, x.note].map(csvq).join(',')));
-      downloadText('decisions.csv', lines.join('\n') + '\n'); };
-    $('#decImport', wrap).onclick = () => $('#decFile', wrap).click();
-    $('#decFile', wrap).onchange = async e => { const file = e.target.files[0]; if (!file) return;
-      const lines = (await file.text()).split(/\r?\n/).filter(l => l.trim());
-      const head = parseCsvLine(lines[0]).map(s => s.trim().toLowerCase());
-      const idx = k => head.indexOf(k);
-      const d = {};
-      for (const line of lines.slice(1)) { const f = parseCsvLine(line);
-        const action = (f[idx('action')] || '').trim().toLowerCase(), prop = (f[idx('prop')] || '').trim(), value = (f[idx('value')] || '').trim();
-        if (!['keep','leave','defer'].includes(action) || !prop || !value) continue;  // undecided template rows
-        d[prop + ' ' + value] = {prop, value, action, keep_qid: (f[idx('keep_qid')] || '').trim(), note: (f[idx('note')] || '').trim()};
-      }
-      decSave(d); built['review'] = false; show('review', false); };
-    $('#decTemplate', wrap).onclick = () => { const lines = ['prop,value,action,keep_qid,note'];
-      Object.entries(decGroups()).forEach(([k, rows]) => { const keep = (rows.find(x => x.role === 'keep') || {}).q || (rows.find(x => x.role === 'remove') || {}).keep || '';
-        lines.push([rows[0].prop, decGroup(rows[0]), '', keep, ''].map(csvq).join(',')); });
-      downloadText('decisions_template.csv', lines.join('\n') + '\n'); }; }
+  if (id === 'review') { el.innerHTML = `<div class="card">${intro('review')}<div class="alert warn"><b>${fmt(new Set(reviewRows.map(r=>r.prop+(r.prop==='P5063'?r.ili:r.sid))).size)} groups need a decision</b> before any removal runs. Decisions are collected in the shared Google Sheet. <span class="tip" tabindex="0">Why these?<span class="box">The source repos don't say which item should keep the ID, and the items don't clearly match the synset (or look equally good), so the proposed keep is only a guess.</span></span></div><div id="t-review"></div></div>`;
+    T.review = makeTable($('#t-review'), {rows:reviewRows, cols:[{k:'prop', label:'Property', render:r => propCell(r.prop), text:r => r.prop+' '+PROP[r.prop].n}, ...violationCols()], sort:3, filters:[{k:'prop',label:'Both properties',opts:()=>[['P8814','P8814'],['P5063','P5063']],get:r=>r.prop},{k:'cat',label:'All categories',opts:catOpts(reviewRows),get:r=>r.cat},{k:'role',label:'All verdicts',opts:roleOpts,get:r=>r.role},...srcFilters]}); }
   if (id === 'fixes') fixes(el);
-  if (id === 'missing') { el.innerHTML = `<div class="card"><p class="muted">Synsets that carry a Wikidata QID in OEWN/OENN but have no ILI (${propLink('P5063')}, Interlingual Index) value. <b>NEEDS_NEW_ILI</b> = an ILI has to be minted/assigned in CILI first; <b>USE_EXISTING_ILI</b> = the QID already has one.</p><div id="t-missing"></div></div>`;
+  if (id === 'missing') { el.innerHTML = `<div class="card">${intro('missing')}<p class="muted"><b>NEEDS_NEW_ILI</b> = the ILI has to be created first. <b>USE_EXISTING_ILI</b> = the item already has one.</p><div id="t-missing"></div></div>`;
     makeTable($('#t-missing'), {rows:D.missing, cols:[
       {k:'sid', label:'Synset', render:r=>slink(r.sid)}, {k:'sdef', label:'Definition', cls:'wide'}, {k:'mem', label:'Members', cls:'wide'},
       {k:'q', label:'QID', render:r=>r.q.split('|').map(qlink).join(' ')}, {k:'oewn', label:'OEWN'}, {k:'oenn', label:'OENN'},
       {k:'ex', label:'Existing ILIs'}, {k:'status', label:'Status'}, {k:'qs', label:'QID status'}],
       filters:[{k:'status',label:'All statuses',opts:()=>[...new Set(D.missing.map(r=>r.status))].map(s=>[s,s]),get:r=>r.status}]}); }
   if (id === 'all') { const rows = [...D.p8814.map(r=>({...r, prop:'P8814', val:r.sid})), ...D.p5063.map(r=>({...r, prop:'P5063', val:r.ili}))];
-    el.innerHTML = `<div class="card"><p class="muted">Every violation row from both properties — ${propLink('P8814')} (WordNet synset ID) and ${propLink('P5063')} (Interlingual Index) — in one table (replaces the old <code>full_comparison_table</code> view).</p><div id="t-all"></div></div>`;
+    el.innerHTML = `<div class="card">${intro('all')}<div id="t-all"></div></div>`;
     makeTable($('#t-all'), {rows, cols:[{k:'prop', label:'Property', render:r => propCell(r.prop), text:r => r.prop+' '+PROP[r.prop].n}, ...violationCols()],
       filters:[{k:'prop',label:'Both properties',opts:()=>[['P8814','P8814'],['P5063','P5063']],get:r=>r.prop},{k:'cat',label:'All categories',opts:catOpts(rows),get:r=>r.cat},{k:'role',label:'All verdicts',opts:roleOpts,get:r=>r.role},...srcFilters]}); }
   if (id === 'method') method(el);
@@ -660,8 +614,11 @@ function overview(el) {
   const catRows = (rows, key, color) => { const c = {}; rows.forEach(r => { (c[r.cat] = c[r.cat] || {n:0, role:r.role}).n++; }); const m = Object.entries(c).sort((x,y)=>y[1].n-x[1].n);
     return `<table class="cats">${m.map(([k,v]) => `<tr class="click" data-go="${key}" data-cat="${esc(k)}"><td>${esc(catLabel(k))}</td><td class="track"><div class="fill" style="width:${100*v.n/rows.length}%;background:var(--${v.role==='valid'?'valid':'remove'})"></div></td><td class="num">${fmt(v.n)} <span class="muted">${pct(v.n,rows.length)}</span></td></tr>`).join('')}</table>`; };
   el.innerHTML = `
-  <div class="card"><h2>Where the numbers come from <span class="tip" tabindex="0">scope of this dashboard<span class="box">These numbers cover <b>only the constraint violations</b> — statements on Wikidata that break the unique-value constraint on P8814 (WordNet synset ID) / P5063 (Interlingual Index) (the same synset ID or ILI on several items). They are <b>not</b> the full mapping universe: every OEWN/OENN ↔ Wikidata candidate pair lives in the <i>All mappings</i> tab. Mappings that don't produce a duplicate are not re-reviewed here.</span></span></h2>
-    ${M ? `<div class="alert"><b>Where these sit in the bigger picture:</b> the import pipeline compared <b>${fmt(M.total)}</b> OEWN/OENN synset–QID pairs against Wikidata (${fmt(M.found)} already linked at the ${esc(M.date)} comparison). The <b>${fmt(tot)}</b> statements analysed here — roughly <b>${pct(tot, M.total)}</b> of that mapped universe — are the slice where one ${propLink('P8814')} / ${propLink('P5063')} value ended up on several items (some predate our imports). The full table lives in the <a href="#map" data-show="map">All mappings</a> tab.</div>` : ''}
+  <div class="card"><h2>What this dashboard shows</h2>
+    <p class="muted">Wikidata links its items to WordNet with two IDs: ${propLink('P8814')} (synset ID) and ${propLink('P5063')} (Interlingual Index, ILI). Each ID should sit on one item only. Where several items share it, we check whether that is a real mistake or fine, and propose fixes. Click a tab to explore:</p>
+    <table class="plain">${tabs.filter(t => t.id !== 'overview').map(t => `<tr><td><a href="#${t.id}" data-show="${t.id}"><b>${esc(t.label)}</b></a></td><td>${HELP[t.id]}</td></tr>`).join('')}</table></div>
+  <div class="card"><h2>The numbers</h2>
+    ${M ? `<p class="muted">${fmt(tot)} statements have a duplicate ID, out of ${fmt(M.total)} WordNet–Wikidata pairs in total (${pct(tot, M.total)}).</p>` : ''}
     <div class="grid">
       <div class="stat"><div class="v">${fmt(tot)}</div><div class="l">Violating statements</div></div>
       <div class="stat valid"><div class="v">${fmt(valid)}</div><div class="l">Valid · no fix</div></div>
@@ -675,14 +632,14 @@ function overview(el) {
       <tr><td><b>${propLink('P8814')} · WordNet synset ID</b></td><td>${fmt(a.total)}</td><td>${fmt(a.valid)}</td><td>${fmt(a.keep)}</td><td>${fmt(a.remove)}</td><td>${fmt(a.keep+a.remove)} in ${fmt(a.keep)} synsets</td></tr>
       <tr><td><b>${propLink('P5063')} · Interlingual Index</b></td><td>${fmt(b.total)}</td><td>${fmt(b.valid)}</td><td>${fmt(b.keep)}</td><td>${fmt(b.remove)}</td><td>${fmt(b.keep+b.remove)} on ${fmt(b.keep)} ILIs</td></tr>
       <tr><th>Total</th><th>${fmt(tot)}</th><th>${fmt(valid)}</th><th>${fmt(keep)}</th><th>${fmt(rem)}</th><th>${fmt(keep+rem)}</th></tr></table>
-    <p class="muted" style="margin-top:8px">A “real violation” group is N QIDs sharing one synset/ILI: one is kept, the other N−1 lose the statement. So <b>${fmt(keep+rem)} flagged statements → ${fmt(rem)} removals</b>. P5063 is counted per unique (QID, ILI) pair (${fmt(S.p5063_raw)} raw SPARQL rows collapse to ${fmt(b.total)}).</p>
+    <p class="muted" style="margin-top:8px">In each real duplicate group one item keeps the ID and the others lose it: <b>${fmt(keep+rem)} flagged statements → ${fmt(rem)} removals</b>.</p>
     ${a.unresolved+b.unresolved ? `<div class="alert remove">${a.unresolved+b.unresolved} real-violation rows have no matching fix line.</div>` : ''}
-    ${a.deferred+b.deferred ? `<div class="alert warn">${a.deferred+b.deferred} rows deferred via decisions.csv — removals are held until someone decides.</div>` : ''}
+    ${a.deferred+b.deferred ? `<div class="alert warn">${a.deferred+b.deferred} rows are on hold until someone decides.</div>` : ''}
   </div>
-  <div class="card"><h2>Evidence behind each keep decision <span class="muted">(duplicate groups)</span></h2>
+  <div class="card"><h2>Why we keep each item <span class="muted">(duplicate groups)</span></h2>
     <table class="plain"><tr><th>Reason</th><th>P8814</th><th>P5063</th></tr>
     ${Object.keys(REASON).filter((k,i,a) => a.indexOf(k)===i).map(k => { const g = p => (D.reasons.find(x => x.prop===p && x.reason===k)||{n:0}).n; return (g('P8814')||g('P5063')) ? `<tr><td>${WEAK.has(k) ? '<span class="pill s unresolved">weak</span> ' : ''}${esc(REASON[k])}</td><td>${fmt(g('P8814'))}</td><td>${fmt(g('P5063'))}</td></tr>` : ''; }).join('')}</table>
-    <p class="muted" style="margin-top:6px">“Source repos name it” = english-wordnet / english-namenet map that synset or ILI to exactly this QID, the strongest evidence we have. Weak decisions are flagged for review.</p></div>
+    <p class="muted" style="margin-top:6px">“Source repos name it” is the strongest evidence: the original WordNet data itself points to that item. “Weak” ones go to the Review queue.</p></div>
   <div class="card"><div class="alert"><b>All ${fmt(rem)} proposed fixes are removals on the Wikidata side</b> — deleting duplicate P8814/P5063 statements from one item of each group. <span class="tip" tabindex="0">What about the source repos?<span class="box">The source repos were cross-checked (<code>source_crosscheck.csv</code>): <b>${fmt([...D.p8814, ...D.p5063].filter(r => r.role==='remove' && r.se==='yes').length)} removals</b> target an item that english-wordnet / english-namenet name themselves — flagged <i>conflict</i> in the tables. Those need a source-side fix or a different keep decision before the removal is safe; every other removal agrees with the sources.</span></span></div></div>
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(380px,1fr))">
     <div class="card"><h2>P8814 categories <span class="muted">(click to filter)</span></h2>${catRows(D.p8814,'p8814')}</div>
@@ -696,7 +653,7 @@ function qsText(list) { return list.map(f => `-${f.remove}|${f.prop}|"${f.value}
 function fixes(el) {
   const n8 = D.fixes.filter(f=>f.prop==='P8814').length, n5 = D.fixes.length - n8;
   el.innerHTML = `<div class="card"><h2>${fmt(D.fixes.length)} removals (${fmt(n8)} ${propLink('P8814')} · ${fmt(n5)} ${propLink('P5063')})</h2>
-    <div class="alert warn"><b>Format check:</b> the files in <code>quickstatements/</code> won't run as-is — copy the corrected V1 commands below instead. <span class="tip" tabindex="0">why?<span class="box">Those files use <code>-QID|P8814|value|S248|keepQID</code> with the value unquoted. QuickStatements V1 expects string / external-ID values in double quotes and does not take a source on a removal. The box below has the same removals in valid V1 syntax: <code>-QID|P|"value"</code>. The keep QID is shown in the table for review only.</span></span></div>
+    ${intro('fixes')}<div class="alert warn"><b>Use the commands below, not the files in <code>quickstatements/</code>.</b> Those files use an older format that QuickStatements rejects.</div>
     <div class="toolbar"><button class="btn primary" id="copy">Copy V1 commands</button><button class="btn" id="dl">Download .txt</button><span class="muted" id="qsnote"></span></div>
     <pre class="box" id="qsbox"></pre></div>
   <div class="card"><h2>Removal table</h2><div id="t-fixes"></div></div>`;
@@ -719,26 +676,26 @@ function fixes(el) {
 
 function method(el) {
   el.innerHTML = `
-  <div class="card"><h2>What this repository does</h2>
+  <div class="card">${intro('method')}<h2>What this repository does</h2>
     <p>Two connected jobs around Open English WordNet (OEWN) / Open English Namenet (OENN) and Wikidata:</p>
     <ol>
       <li><b>Import pipeline (Jul–Aug 2026):</b> extract OEWN/OENN synsets that carry a Wikidata QID, compare them with what Wikidata already links via P8814 (WordNet synset ID) / P5063 (Interlingual Index), turn the missing ones (the “backlog”) into QuickStatements, import and verify. The <i>All mappings</i> tab shows this comparison table.</li>
       <li><b>Violation clean-up (Sep 2026 →):</b> the imported and pre-existing statements produce duplicate-value constraint violations on Wikidata. We fetch them, classify each as a real error or a legitimate duplicate (polysemy, synonyms), and propose removals. This dashboard covers this part.</li>
     </ol></div>
   <div class="card"><h2>Import pipeline</h2>
-    <p><code>extract_yaml.py</code> → <code>fetch_wikidata.py</code> → <code>build_comparison_table.py</code> → backlog (manual work in Google Sheets) → <code>clean_backlogs.py</code> → <code>backlog_to_quickstatements.py</code> → <code>check_qids.py</code> → <code>submit_to_quickstatements.sh</code> → <code>verify_import.py</code></p>
+    <p><code>extract_yaml.py</code> → <code>fetch_wikidata.py</code> → <code>build_comparison_table.py</code> → backlog (manual work in Google Sheets) → import via QuickStatements (scripts now in <code>archive/</code>) → <code>verify_import.py</code></p>
     <p class="muted">Snapshots in README: 2026-07-01 — 22,670 candidate pairs, 70.95% already in Wikidata; 2026-08-16 — 22,691 pairs, 96.01% in Wikidata, 906 left in the backlog.</p>
     <table class="plain"><tr><th>QuickStatements batch (Aug 2026)</th><th>Done</th><th>Error</th></tr>
     ${D.batches.map(b => `<tr><td>${esc(b.batch)}</td><td>${fmt(b.done)}</td><td>${fmt(b.error)}</td></tr>`).join('')}</table></div>
   <div class="card"><h2>Violation pipeline</h2>
     <table class="plain"><tr><th>Step</th><th>Script</th><th>Output</th></tr>
       <tr><td>1 Fetch</td><td><code>fetch_violations.py</code></td><td><code>p*_violations_from_wd.csv</code></td></tr>
-      <tr><td>2 Categorise</td><td><code>categorize_violations.py</code></td><td><code>p*_violations_categorized.csv</code></td></tr>
-      <tr><td>3 Similarity</td><td><code>categorize_violations_enhanced.py</code></td><td><code>p*_violations_enhanced.csv</code></td></tr>
-      <tr><td>4 Final</td><td><code>categorize_all_final.py</code></td><td><code>p*_violations_final.csv</code></td></tr>
-      <tr><td>5 Proposals</td><td><code>generate_proposals_v2.py</code></td><td><code>quickstatements/*.txt</code></td></tr>
-      <tr><td>6 Dashboard</td><td><code>generate_dashboard.py</code></td><td><code>violations_dashboard.html</code></td></tr>
-      <tr><td>Other</td><td><code>enhance_multiqid_review.py</code>, <code>build_full_comparison.py</code> (legacy export), <code>generate_proposals.py</code> (v1, superseded)</td><td></td></tr></table></div>
+      <tr><td>2 Classify</td><td><code>categorize_all_final.py</code></td><td><code>p*_violations_final.csv</code></td></tr>
+      <tr><td>3 Source cross-check</td><td><code>crosscheck_sources.py</code></td><td><code>source_crosscheck.csv</code></td></tr>
+      <tr><td>4 Proposals</td><td><code>generate_proposals_v2.py</code></td><td><code>keep_decisions.csv</code>, <code>quickstatements/*.txt</code></td></tr>
+      <tr><td>5 Dashboard</td><td><code>generate_dashboard.py</code></td><td><code>violations_dashboard.html</code></td></tr>
+      <tr><td>6 Review sheet</td><td><code>export_review_sheet.py</code> / <code>import_decisions.py</code></td><td><code>review_sheet.xlsx</code> / <code>manual_review/decisions.csv</code></td></tr>
+      <tr><td colspan="3" class="muted">All of it: <code>python scripts/run_pipeline.py</code>. Superseded scripts live in <code>archive/</code>.</td></tr></table></div>
   <div class="card"><h2>Classification and keep-decision</h2>
     <ul><li><b>P8814:</b> if one QID's label is among the synset members it is kept; if both are, the pair is a valid polysemy. Otherwise fall back to similarity between the QID description and the synset definition (best score is kept).</li>
     <li><b>P5063:</b> label/description similarity to the synset definition; <i>Dissimilar QIDs</i> are the real violations, the keep QID is the best-scoring one.</li>
@@ -746,7 +703,7 @@ function method(el) {
 }
 
 function files(el) {
-  el.innerHTML = `<div class="card"><h2>Output files <span class="muted">(this folder)</span></h2>
+  el.innerHTML = `<div class="card">${intro('files')}<h2>Output files</h2>
     <table class="plain"><tr><th>File</th><th>Description</th><th>Lines</th><th>Size</th></tr>
     ${D.files.map(f => `<tr><td><a href="${esc(f.path)}">${esc(f.path)}</a></td><td>${esc(f.desc)}</td><td>${fmt(f.lines)}</td><td>${fmt(f.kb)} KB</td></tr>`).join('')}</table></div>`;
 }

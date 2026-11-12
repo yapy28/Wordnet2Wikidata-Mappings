@@ -16,7 +16,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from datetime import datetime
 
-OUTPUT_DIR = Path("data/output/20260929")
+OUTPUT_DIR = Path("data/output/20261101")
 QUICKSTATEMENTS_DIR = OUTPUT_DIR / "quickstatements"
 MANUAL_REVIEW_DIR = OUTPUT_DIR / "manual_review"
 
@@ -429,7 +429,12 @@ NEXT STEPS:
     return report
 
 
-def main():
+def main(run_dir=None):
+    global OUTPUT_DIR, QUICKSTATEMENTS_DIR, MANUAL_REVIEW_DIR
+    if run_dir:
+        OUTPUT_DIR = Path(run_dir)
+        QUICKSTATEMENTS_DIR = OUTPUT_DIR / "quickstatements"
+        MANUAL_REVIEW_DIR = OUTPUT_DIR / "manual_review"
     source_picks = load_source_picks()
     if not source_picks:
         print("WARNING: no source_crosscheck.csv - run scripts/crosscheck_sources.py first; "
@@ -463,4 +468,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    main(sys.argv[1] if len(sys.argv) > 1 else None)

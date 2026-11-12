@@ -57,6 +57,6 @@ Finished work, newest first: `- YYYY-MM-DD: what (link/commit)`.
 ## Links
 
 - Repository: https://github.com/yapy28/Wordnet2Wikidata-Mappings
-- Comprehensive dashboard: `data/output/20260929/comprehensive_dashboard.html`
-- Comparison table: `data/output/20260929/full_comparison_table.csv`
-- QuickStatements: `data/output/20260929/quickstatements/`
+- Comprehensive dashboard: `data/output/20261101/comprehensive_dashboard.html`
+- Comparison table: `data/output/20261101/full_comparison_table.csv`
+- QuickStatements: `data/output/20261101/quickstatements/`

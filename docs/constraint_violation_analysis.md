@@ -101,7 +101,7 @@ SELECT ?ssid ?entity ?entityLabel WHERE {
 
 ### P5063 Violations (784 rows)
 
-**File:** `data/output/20260929/p5063_violations_from_wd.csv`
+**File:** `data/output/20261101/p5063_violations_from_wd.csv`
 
 **Columns:**
 - `ili`: Interlingual Index ID
@@ -137,7 +137,7 @@ Many "violations" are actually **valid mappings** representing different perspec
 
 ### P8814 Violations (2,146 rows)
 
-**File:** `data/output/20260929/p8814_violations_from_wd.csv`
+**File:** `data/output/20261101/p8814_violations_from_wd.csv`
 
 **Columns:** Similar structure to P5063, with synset information joined.
 
@@ -150,7 +150,7 @@ Synsets mapping to multiple Wikidata items often indicate:
 
 ### Missing ILIs Backlog
 
-**File:** `data/output/20260929/missing_ilis.csv`
+**File:** `data/output/20261101/missing_ilis.csv`
 
 **Source:** Synsets from OEWN/OENN that have Wikidata QIDs but **no ILI value** assigned.
 
@@ -252,9 +252,9 @@ For true errors:
 
 | File | Location | Rows | Description |
 |------|---------|------|-------------|
-| p5063_violations_from_wd.csv | data/output/20260929/ | 784 | All P5063 violations with synset info |
-| p8814_violations_from_wd.csv | data/output/20260929/ | 2,146 | All P8814 violations with synset info |
-| missing_ilis.csv | data/output/20260929/ | 100+ | Synsets with QIDs but no ILIs |
+| p5063_violations_from_wd.csv | data/output/20261101/ | 784 | All P5063 violations with synset info |
+| p8814_violations_from_wd.csv | data/output/20261101/ | 2,146 | All P8814 violations with synset info |
+| missing_ilis.csv | data/output/20261101/ | 100+ | Synsets with QIDs but no ILIs |
 
 ## Scripts Used
 

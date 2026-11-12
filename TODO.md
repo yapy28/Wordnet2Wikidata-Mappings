@@ -33,12 +33,12 @@ Updated 2026-11-01. Current priorities for WordNet2Wikidata constraint violation
 - Comprehensive dashboard: 6 tabs with all data
 
 **Files Generated:**
-- `data/output/20260929/p8814_violations_final.csv` - Final P8814 violations with categorization
-- `data/output/20260929/p5063_violations_final.csv` - Final P5063 violations with categorization
-- `data/output/20260929/full_comparison_table.csv` - Complete comparison with 2,354 rows
-- `data/output/20260929/comprehensive_dashboard.html` - Interactive HTML dashboard
-- `data/output/20260929/quickstatements/p8814_fixes_quickstatements.txt` - 440 QuickStatements
-- `data/output/20260929/quickstatements/p5063_fixes_quickstatements.txt` - 75 QuickStatements
+- `data/output/20261101/p8814_violations_final.csv` - Final P8814 violations with categorization
+- `data/output/20261101/p5063_violations_final.csv` - Final P5063 violations with categorization
+- `data/output/20261101/full_comparison_table.csv` - Complete comparison with 2,354 rows
+- `data/output/20261101/comprehensive_dashboard.html` - Interactive HTML dashboard
+- `data/output/20261101/quickstatements/p8814_fixes_quickstatements.txt` - 440 QuickStatements
+- `data/output/20261101/quickstatements/p5063_fixes_quickstatements.txt` - 75 QuickStatements
 
 **Category Breakdown:**
 - ONE_IN_MEMBERS_DESC_MISMATCH: QID in members but definition doesn't match → **One QID in members, definition mismatch**
@@ -57,6 +57,11 @@ Updated 2026-11-01. Current priorities for WordNet2Wikidata constraint violation
 
 ### Open Questions
 
+- **Dashboard layout mistakes**: some layout problems were reported but not specified. Need a screenshot or a list of tabs/elements that look wrong.
+- **Where to host the dashboard**: GitHub Pages today. Could also be served from minitechnicus.eu (static Astro site on Cloudflare, no backend). Not decided; the Pages URL changed to `.../data/output/20261101/...` after the run-folder rename.
+- **Interactive review**: decisions go through the Google Sheet for now (the dashboard is read-only). A truly interactive version needs a backend; see the on-Wikidata plan once it is written.
+- **Google Sheet import**: check that the dropdown and the hover notes survive File -> Import; use "Insert new sheet(s)", not "Replace spreadsheet", if the sheet already has content.
+
 - Should we automatically apply fixes or always require manual review?
 - How often should we re-scan for new violations? (Weekly? Monthly?)
 - Should we track which fixes have been applied vs just proposed?
@@ -69,7 +74,7 @@ From 2026-11-02 WordNet presentation (see FINDINGS.md for details):
 - **Man-of-war**: Keep both (redirect item)
 - **Cholestasis/Acholia**: Keep both, propose WordNet-side synset split
 
-These are recorded in `data/output/20260929/manual_review/decisions.csv` and override automatic proposals.
+These are recorded in `data/output/20261101/manual_review/decisions.csv` and override automatic proposals.
 
 ### References
 

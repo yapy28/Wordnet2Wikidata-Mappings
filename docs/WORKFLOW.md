@@ -17,20 +17,19 @@ things the repo cannot show and need the maintainer's input.
 ## 2. The pipeline today
 
 ```bash
-# violation analysis (data/output/20260929/)
-python scripts/fetch_violations.py
-python scripts/categorize_violations.py && python scripts/categorize_violations_enhanced.py && python scripts/categorize_all_final.py
-python scripts/crosscheck_sources.py          # what english-wordnet / english-namenet say for each duplicate group
-python scripts/generate_proposals_v2.py       # keep/remove proposals + keep_decisions.csv (source repos win)
-python scripts/build_full_comparison.py       # legacy export
-python scripts/generate_dashboard.py          # violations_dashboard.html
-python3 -m unittest discover -s tests -t .    # consistency checks
+# violation analysis (data/output/20261101/)
+python scripts/run_pipeline.py                         # classify -> proposals -> dashboard -> review sheet -> tests
+python scripts/run_pipeline.py --with fetch crosscheck # full refresh: live SPARQL fetch + source-repo cross-check first
+python scripts/run_pipeline.py --from proposals        # after new decisions (what CI runs)
+python scripts/run_pipeline.py --only dashboard        # one stage
+# stages: fetch (fetch_violations) · classify (categorize_all_final) · crosscheck (crosscheck_sources) ·
+#         proposals (generate_proposals_v2) · dashboard (generate_dashboard) · sheet (export_review_sheet) · test
 ```
 
 Keep decision priority: **human decisions > source repos > label in synset members > similarity score > fallback**.
 `keep_decisions.csv` records the reason for every group; `tie` and `fallback` are "weak" and go to the review queue.
-Human decisions live in `manual_review/decisions.csv` (section 5) — the review tab of the dashboard
-lets you record them interactively and export the file.
+Human decisions live in `manual_review/decisions.csv` (section 5), collected through the Google Sheet.
+The dashboard only displays; it has no decision buttons (an interactive version would need a backend).
 
 ## 3. Done
 
@@ -50,19 +49,17 @@ lets you record them interactively and export the file.
 3. **7 P8814 synsets** where the source names a QID that is not one of the duplicated Wikidata items: that QID may be missing the statement.
 4. **Fix the QuickStatements format**: removals must be `-QID|P8814|"value"` (quoted, no `S248` source). The dashboard's Fixes tab already shows the correct lines; the generator still writes the old format.
 5. **Test batch**: run 5-10 removals where the source repos are silent and both statements pre-date our import; check on Wikidata.
-6. **decisions.csv**: done — implemented (section 5). New contributors start in the dashboard's
-   **Review queue** tab: record keep/leave/defer per group, export, commit — or edit the
-   downloadable template in Google Sheets.
+6. **decisions.csv**: done — implemented (section 5). Contributors fill in the Google Sheet
+   (`review_sheet.xlsx`, section 5); `import_decisions.py` turns it into the file.
 
 ### Later
-- **CI/CD (proposed)**: contributors work only through `decisions.csv` (or the dashboard's review
-  tab export); a GitHub Actions workflow then re-runs the pipeline
+- **CI/CD (proposed)**: contributors work only through `decisions.csv` (via the Google Sheet); a GitHub Actions workflow then re-runs the pipeline
   (`generate_proposals_v2.py`, `generate_dashboard.py`, tests) and commits the regenerated
   outputs, so GitHub Pages always serves the current dashboard. Prerequisites: one `--run-dir`
   parameter for all scripts, and no absolute paths. The heavy steps (SPARQL fetch, source
   cross-check) can stay manual and out of CI.
 - Closing loop: re-fetch violations after fixes, log what was applied and when (`fix_applied` is currently `FALSE` everywhere).
-- Hygiene: one `--run-dir` parameter for all scripts (paths are hardcoded to `20260929`), retire `categorize_violations.py` / `generate_proposals.py` (v1), rename the run folder (data was fetched 2026-11-01), drop the legacy `full_comparison_table.csv` (it labels keepers `NEEDS_FIX`).
+- Hygiene: done: `--run-dir` plumbing, `run_pipeline.py`, run folder renamed to its fetch date (`20261101`), legacy scripts/data/docs (including the stage-1 import tools) moved to `archive/`.
 - Stage 2 record: write down which PRs went to WordNet / Namenet / CILI and their state **(confirm)**. Check whether the 2026-09-29 QID-sync commits should be PR'd.
 - 127 synsets with a QID but no ILI (`missing_ilis_verified.csv`): needs CILI work.
 - Add new mappings (see section 6).
@@ -89,11 +86,15 @@ Rules: decisions beat the source pick, which beats the heuristics (reason `decis
 `decision_leave` / `defer`); an unknown group or a `keep_qid` outside the group is an error,
 not silently ignored; the file is optional and only lists groups you decided.
 
-Workflow: the dashboard's **Review queue** tab records decisions in the browser
-(keep QID / leave group / defer + note), exports `decisions.csv`; or download the template
-(all review groups, pre-filled with the current proposal) and edit it in Google Sheets.
-Save the result to `manual_review/decisions.csv`, re-run `generate_proposals_v2.py` and
-`generate_dashboard.py`. The first three decisions came out of the presentation
+Workflow: contributors record keep QID / leave group / defer + note in the Google Sheet below;
+`import_decisions.py` writes `manual_review/decisions.csv`; then re-run the pipeline from `proposals`.
+
+**Google Sheets route (collaborators):** `python scripts/export_review_sheet.py` writes
+`data/output/<run>/review_sheet.xlsx` (tabs: Read me, Review queue, All groups, Summary; one row per
+duplicate group; yellow columns Decision / Keep QID / Note; hover notes on every header). Upload it
+to the shared sheet (File -> Import -> Replace spreadsheet). After the review: File -> Download -> .xlsx,
+then `python scripts/import_decisions.py <file.xlsx>` (validates every row against the real groups and
+writes `manual_review/decisions.csv`), then `python scripts/run_pipeline.py --from proposals`. The first three decisions came out of the presentation
 (2026-11-02): caracara (deliberate synonym pair), the Portuguese man-of-war redirect
 (we keep redirects), and cholestasis/acholia (two different conditions).
 
