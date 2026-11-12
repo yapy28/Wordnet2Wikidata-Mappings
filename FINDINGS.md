@@ -7,13 +7,13 @@ Started 2026-11-01. Open work: `TODO.md`; finished: `DONE.md`.
 ### Finding 2026-11-02: WordNet presentation decisions
 
 - **Source**: WordNet community presentation/discussion
-- **Decisions recorded in**: `data/output/20260929/manual_review/decisions.csv`
+- **Decisions recorded in**: `data/output/20261101/manual_review/decisions.csv`
 - **Three specific decisions from WordNet community**:
   1. **Caracara (01615818-n)**: Deliberate synonym pair (Polyborus plancus = crested caracara). Decision: **LEAVE** - keep both P8814 statements. Rationale: WordNet links both QIDs deliberately as synonyms.
   2. **Man-of-war redirect (01915807-n)**: Q272388 is a redirect item for Q202526. Decision: **LEAVE** - keep both statements. Rationale: We keep redirects, no removal.
   3. **Cholestasis/Acholia (i110785)**: Cholestasis (Q1075923) and acholia (Q8187550) are two different conditions per WordNet community. Decision: **LEAVE** - propose a WordNet-side synset split instead of removing a Wikidata statement.
 - **Implication**: These decisions override automatic fix proposals. The `generate_proposals_v2.py` script now consumes `decisions.csv` and respects human decisions.
-- **Files**: `data/output/20260929/manual_review/decisions.csv`, `scripts/generate_proposals_v2.py`
+- **Files**: `data/output/20261101/manual_review/decisions.csv`, `scripts/generate_proposals_v2.py`
 - **Commit**: [8d4ee2a](https://github.com/yapy28/Wordnet2Wikidata-Mappings/commit/8d4ee2a) - "Decisions loop, all-mappings tab, refresh pipeline"
 
 ### Finding 2026-11-01: QuickStatements parsing bug fixed
@@ -68,7 +68,7 @@ Started 2026-11-01. Open work: `TODO.md`; finished: `DONE.md`.
   6. **DUPLICATE_LABELS**: QIDs with duplicate labels - needs fix
 
 - **Key insight**: 0% REVIEW rate achieved - all violations automatically categorized
-- **Files**: `data/output/20260929/p8814_violations_final.csv`, `data/output/20260929/p5063_violations_final.csv`
+- **Files**: `data/output/20261101/p8814_violations_final.csv`, `data/output/20261101/p5063_violations_final.csv`
 
 ### Finding 2026-09-29: Wikidata constraint violations source
 
@@ -126,4 +126,4 @@ Started 2026-11-01. Open work: `TODO.md`; finished: `DONE.md`.
 - **Future**: Should expand to include ALL mappings for drift detection
 - **Columns**: entity_type, qid, wd_label, wd_description, synset_id, synset_definition, synset_members, synset_source, ili, category, category_raw, is_violation, violation_type, has_fix_proposed, fix_qid, fix_applied, confidence_score, status
 - **Links**: All QIDs, ILIs, and synsets now have clickable links to external resources
-- **Files**: `scripts/build_full_comparison.py`, `data/output/20260929/full_comparison_table.csv`
+- **Files**: `scripts/build_full_comparison.py`, `data/output/20261101/full_comparison_table.csv`

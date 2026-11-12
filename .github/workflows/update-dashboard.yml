@@ -1,89 +1,41 @@
 name: Update Dashboard
 
+# Regenerates proposals, dashboard and review sheet whenever the human decisions change.
+# The Wikidata fetch and the source-repo cross-check stay manual (they need live data and the
+# local source repos): run `python scripts/run_pipeline.py --with fetch crosscheck` locally.
 on:
-  # Manual trigger from GitHub UI
+  push:
+    branches: [main]
+    paths:
+      - 'data/output/*/manual_review/decisions.csv'
   workflow_dispatch:
-    inputs:
-      force:
-        description: 'Force refresh even if no changes'
-        required: false
-        default: 'false'
-  
-  # Scheduled trigger (daily at 8am UTC)
-  schedule:
-    - cron: '0 8 * * *'
+
+permissions:
+  contents: write
 
 jobs:
   update-dashboard:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          
-      - name: Install dependencies
+
+      - run: pip install -r requirements.txt
+
+      - name: Proposals, dashboard, review sheet, tests
+        run: python scripts/run_pipeline.py --from proposals
+
+      - name: Commit regenerated outputs
         run: |
-          python -m pip install --upgrade pip
-          pip install requests pyyaml
-          
-      - name: Create output directory
-        run: mkdir -p data/output/$(date +%Y%m%d)
-        
-      - name: Fetch violations from Wikidata
-        run: python scripts/fetch_violations.py
-        continue-on-error: true
-        
-      - name: Categorize violations
-        run: |
-          python scripts/categorize_violations.py || true
-          python scripts/categorize_violations_enhanced.py || true
-          python scripts/categorize_all_final.py || true
-          
-      - name: Generate proposals
-        run: python scripts/generate_proposals_v2.py || true
-        
-      - name: Build comparison table
-        run: python scripts/build_full_comparison.py || true
-        
-      - name: Generate comprehensive dashboard
-        run: python scripts/generate_comprehensive_dashboard.py || true
-        
-      - name: Commit and push changes
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          
-          # Check if there are changes to commit
-          if [ -n "$(git status --porcelain)" ]; then
-            git add data/output/
-            git add docs/
-            git add scripts/
-            git add .github/workflows/
-            
-            TIMESTAMP=$(date +%Y-%m-%dT%H:%M:%SZ)
-            git commit -m "Auto-update: Dashboard and violation data [$TIMESTAMP]"
-            git push
-          else
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/output/
+          if git diff --cached --quiet; then
             echo "No changes to commit"
+          else
+            git commit -m "Auto-update: proposals, dashboard and review sheet from decisions.csv"
+            git push
           fi
-        
-      - name: Upload dashboard artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: dashboard-html
-          path: data/output/*/comprehensive_dashboard.html
-          retention-days: 7
-          
-      - name: Upload comparison table artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: comparison-table-csv
-          path: data/output/*/full_comparison_table.csv
-          retention-days: 7

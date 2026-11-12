@@ -24,7 +24,9 @@ WDQS_ENDPOINT = "https://query.wikidata.org/sparql"
 USER_AGENT = "violation-fetcher/0.1 (research script)"
 
 BASE_DIR = Path(__file__).resolve().parent.parent  # Go to repo root
-OUT_DIR = BASE_DIR / "data" / "output" / "20260929"
+OUT_DIR = BASE_DIR / "data" / "output" / "20261101"
+if len(sys.argv) > 1:  # python scripts/fetch_violations.py [run_dir]
+    OUT_DIR = Path(sys.argv[1])
 
 # Paths to source repos
 OEWN_ROOT = Path("~/git/english-wordnet/src/yaml").expanduser()

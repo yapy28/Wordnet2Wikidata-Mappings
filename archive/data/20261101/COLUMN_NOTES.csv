@@ -1,0 +1,66 @@
+Notes
+COLUMN EXPLANATIONS (for all sheets):
+
+1. entity_type - Which Wikidata property this is about (P8814 = synset ID, P5063 = ILI)
+
+2. qid - The Wikidata item identifier (e.g., Q18351973)
+
+3. wd_label - The name or label of the Wikidata item (e.g., disembarkation)
+
+4. wd_description - The description from Wikidata (e.g., process of unloading a watercraft...)
+
+5. synset_id - The WordNet synset identifier (e.g., 00058822-n)
+
+6. synset_definition - What the WordNet synset means (e.g., the act of passengers getting off...)
+
+7. synset_members - Words in this WordNet synset, separated by | (e.g., debarkation|disembarkation|disembarkment)
+
+8. synset_source - Where the synset comes from: OEWN (Open English WordNet) or OENN (Open English Namenet)
+
+9. ili - Interlingual Index identifier for cross-lingual concepts (e.g., i35710)
+
+10. category - Human-readable category explaining what kind of issue this is:
+     - Both QIDs in synset members = Both QIDs are valid members of the synset
+     - Different concepts = The QIDs represent fundamentally different things
+     - One QID in members, definition mismatch = One QID is in the synset but definitions dont match
+     - Multiple QIDs, all in synset members = Multiple QIDs are all valid synset members
+     - Neither QID in members but similar definitions = Neither QID is in members but definitions are similar
+
+11. category_raw - The technical category code (e.g., ONE_IN_MEMBERS_DESC_MISMATCH)
+
+12. is_violation - Is this a real problem? TRUE = real violation that needs fixing, FALSE = valid duplicate
+
+13. violation_type - Type of violation:
+     - DUPLICATE_P8814 = duplicate synset ID mapping
+     - DUPLICATE_P5063 = duplicate ILI mapping
+     - VALID = not actually a violation
+
+14. has_fix_proposed - Do we have a QuickStatements fix ready? TRUE or FALSE
+
+15. fix_qid - If removing a mapping from one QID, this is the QID that should KEEP the mapping
+
+16. fix_applied - Has the fix been applied to Wikidata? TRUE or FALSE (currently all FALSE)
+
+17. confidence_score - How confident we are in the fix (0-10 scale, 10 = most confident)
+
+18. status - Current status of this row:
+     - FIX_PROPOSED = We have a fix ready
+     - NEEDS_FIX = This needs a fix but we havent generated one
+     - VALID = This is actually fine, not a real violation
+
+---
+QUICK REFERENCE:
+
+For P8814 (synset ID violations):
+- Same synset ID is mapped to multiple Wikidata QIDs
+- We need to decide which QID should keep the synset ID
+
+For P5063 (ILI violations):
+- Same ILI is mapped to multiple Wikidata QIDs
+- We need to decide which QID should keep the ILI
+
+DECISION GUIDANCE:
+- If category = Both QIDs in synset members -> LEAVE (keep both)
+- If category = Different concepts -> REMOVE one
+- If category = One QID in members, definition mismatch -> Needs review
+- If category = Multiple ILIs, different POS -> LEAVE (different parts of speech)

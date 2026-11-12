@@ -17,10 +17,10 @@ from collections import defaultdict
 from typing import Dict, List, Set
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-P8814_INPUT = BASE_DIR / "data" / "output" / "20260929" / "p8814_violations_from_wd.csv"
-P5063_INPUT = BASE_DIR / "data" / "output" / "20260929" / "p5063_violations_from_wd.csv"
-P8814_OUTPUT = BASE_DIR / "data" / "output" / "20260929" / "p8814_violations_final.csv"
-P5063_OUTPUT = BASE_DIR / "data" / "output" / "20260929" / "p5063_violations_final.csv"
+P8814_INPUT = BASE_DIR / "data" / "output" / "20261101" / "p8814_violations_from_wd.csv"
+P5063_INPUT = BASE_DIR / "data" / "output" / "20261101" / "p5063_violations_from_wd.csv"
+P8814_OUTPUT = BASE_DIR / "data" / "output" / "20261101" / "p8814_violations_final.csv"
+P5063_OUTPUT = BASE_DIR / "data" / "output" / "20261101" / "p5063_violations_final.csv"
 
 TOKEN_RE = re.compile(r"[A-Za-z0-9]+")
 
@@ -458,7 +458,12 @@ def write_csv(path: Path, rows: List[Dict[str, str]]) -> None:
         writer.writerows(rows)
 
 
-def main():
+def main(run_dir=None):
+    global P8814_INPUT, P5063_INPUT, P8814_OUTPUT, P5063_OUTPUT
+    if run_dir:
+        run_dir = Path(run_dir)
+        P8814_INPUT, P5063_INPUT = run_dir / "p8814_violations_from_wd.csv", run_dir / "p5063_violations_from_wd.csv"
+        P8814_OUTPUT, P5063_OUTPUT = run_dir / "p8814_violations_final.csv", run_dir / "p5063_violations_final.csv"
     print("=" * 70)
     print("FINAL CATEGORIZATION - 100% COVERAGE")
     print("=" * 70)
@@ -515,4 +520,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    main(sys.argv[1] if len(sys.argv) > 1 else None)

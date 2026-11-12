@@ -442,3 +442,4 @@ scripts/data_sources/
 
 # Generated output files
 scripts/output/
+.venv/
