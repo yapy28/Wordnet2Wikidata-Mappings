@@ -1,0 +1,89 @@
+name: Update Dashboard
+
+on:
+  # Manual trigger from GitHub UI
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force refresh even if no changes'
+        required: false
+        default: 'false'
+  
+  # Scheduled trigger (daily at 8am UTC)
+  schedule:
+    - cron: '0 8 * * *'
+
+jobs:
+  update-dashboard:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pyyaml
+          
+      - name: Create output directory
+        run: mkdir -p data/output/$(date +%Y%m%d)
+        
+      - name: Fetch violations from Wikidata
+        run: python scripts/fetch_violations.py
+        continue-on-error: true
+        
+      - name: Categorize violations
+        run: |
+          python scripts/categorize_violations.py || true
+          python scripts/categorize_violations_enhanced.py || true
+          python scripts/categorize_all_final.py || true
+          
+      - name: Generate proposals
+        run: python scripts/generate_proposals_v2.py || true
+        
+      - name: Build comparison table
+        run: python scripts/build_full_comparison.py || true
+        
+      - name: Generate comprehensive dashboard
+        run: python scripts/generate_comprehensive_dashboard.py || true
+        
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          
+          # Check if there are changes to commit
+          if [ -n "$(git status --porcelain)" ]; then
+            git add data/output/
+            git add docs/
+            git add scripts/
+            git add .github/workflows/
+            
+            TIMESTAMP=$(date +%Y-%m-%dT%H:%M:%SZ)
+            git commit -m "Auto-update: Dashboard and violation data [$TIMESTAMP]"
+            git push
+          else
+            echo "No changes to commit"
+          fi
+        
+      - name: Upload dashboard artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: dashboard-html
+          path: data/output/*/comprehensive_dashboard.html
+          retention-days: 7
+          
+      - name: Upload comparison table artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: comparison-table-csv
+          path: data/output/*/full_comparison_table.csv
+          retention-days: 7
