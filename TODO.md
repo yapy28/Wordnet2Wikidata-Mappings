@@ -62,6 +62,15 @@ Updated 2026-11-01. Current priorities for WordNet2Wikidata constraint violation
 - Should we track which fixes have been applied vs just proposed?
 - Do we need to sync with english-wordnet and english-namenet repos, or are all fixes Wikidata-side?
 
+## WordNet Community Decisions
+
+From 2026-11-02 WordNet presentation (see FINDINGS.md for details):
+- **Caracara**: Keep both QIDs (deliberate synonym pair)
+- **Man-of-war**: Keep both (redirect item)
+- **Cholestasis/Acholia**: Keep both, propose WordNet-side synset split
+
+These are recorded in `data/output/20260929/manual_review/decisions.csv` and override automatic proposals.
+
 ### References
 
 - System architecture: See `docs/SYSTEM_ARCHITECTURE.md`
