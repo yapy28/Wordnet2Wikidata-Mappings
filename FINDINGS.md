@@ -4,6 +4,18 @@ Findings with evidence links: `### Finding YYYY-MM-DD: title`.
 
 Started 2026-11-01. Open work: `TODO.md`; finished: `DONE.md`.
 
+### Finding 2026-11-02: WordNet presentation decisions
+
+- **Source**: WordNet community presentation/discussion
+- **Decisions recorded in**: `data/output/20260929/manual_review/decisions.csv`
+- **Three specific decisions from WordNet community**:
+  1. **Caracara (01615818-n)**: Deliberate synonym pair (Polyborus plancus = crested caracara). Decision: **LEAVE** - keep both P8814 statements. Rationale: WordNet links both QIDs deliberately as synonyms.
+  2. **Man-of-war redirect (01915807-n)**: Q272388 is a redirect item for Q202526. Decision: **LEAVE** - keep both statements. Rationale: We keep redirects, no removal.
+  3. **Cholestasis/Acholia (i110785)**: Cholestasis (Q1075923) and acholia (Q8187550) are two different conditions per WordNet community. Decision: **LEAVE** - propose a WordNet-side synset split instead of removing a Wikidata statement.
+- **Implication**: These decisions override automatic fix proposals. The `generate_proposals_v2.py` script now consumes `decisions.csv` and respects human decisions.
+- **Files**: `data/output/20260929/manual_review/decisions.csv`, `scripts/generate_proposals_v2.py`
+- **Commit**: [8d4ee2a](https://github.com/yapy28/Wordnet2Wikidata-Mappings/commit/8d4ee2a) - "Decisions loop, all-mappings tab, refresh pipeline"
+
 ### Finding 2026-11-01: QuickStatements parsing bug fixed
 
 - **Issue**: `build_full_comparison.py` was incorrectly parsing QuickStatements, using property name (P8814/P5063) as the key instead of synset_id/ili
