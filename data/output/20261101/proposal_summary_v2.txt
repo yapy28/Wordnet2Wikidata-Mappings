@@ -3,7 +3,7 @@
 PROPOSAL GENERATION SUMMARY - v2
 ======================================================================
 
-Generated: 2026-11-12 18:52:13
+Generated: 2026-11-12 18:20:09
 
 P8814 (WordNet Synset ID) Violations:
   Total:           1,977
@@ -12,8 +12,8 @@ P8814 (WordNet Synset ID) Violations:
   Manual Review:   0
   Valid (No Fix):  1,121
   Unique Synsets:  416
-  QuickStatements: /Users/gabri/GIT/Wordnet2Wikidata-Mappings/data/output/20261101/quickstatements/p8814_fixes_quickstatements.txt
-  Manual Review:   /Users/gabri/GIT/Wordnet2Wikidata-Mappings/data/output/20261101/manual_review/p8814_manual_review.csv
+  QuickStatements: /home/runner/work/Wordnet2Wikidata-Mappings/Wordnet2Wikidata-Mappings/data/output/20261101/quickstatements/p8814_fixes_quickstatements.txt
+  Manual Review:   /home/runner/work/Wordnet2Wikidata-Mappings/Wordnet2Wikidata-Mappings/data/output/20261101/manual_review/p8814_manual_review.csv
 
 P5063 (ILI) Violations:
   Total:           377
@@ -22,8 +22,8 @@ P5063 (ILI) Violations:
   Manual Review:   0
   Valid (No Fix):  230
   Unique ILIs:     72
-  QuickStatements: /Users/gabri/GIT/Wordnet2Wikidata-Mappings/data/output/20261101/quickstatements/p5063_fixes_quickstatements.txt
-  Manual Review:   /Users/gabri/GIT/Wordnet2Wikidata-Mappings/data/output/20261101/manual_review/p5063_manual_review.csv
+  QuickStatements: /home/runner/work/Wordnet2Wikidata-Mappings/Wordnet2Wikidata-Mappings/data/output/20261101/quickstatements/p5063_fixes_quickstatements.txt
+  Manual Review:   /home/runner/work/Wordnet2Wikidata-Mappings/Wordnet2Wikidata-Mappings/data/output/20261101/manual_review/p5063_manual_review.csv
 
 ======================================================================
 TOTALS:
@@ -37,10 +37,10 @@ TOTALS:
 ======================================================================
 FILES GENERATED:
 ======================================================================
-  /Users/gabri/GIT/Wordnet2Wikidata-Mappings/data/output/20261101/quickstatements/p8814_fixes_quickstatements.txt
-  /Users/gabri/GIT/Wordnet2Wikidata-Mappings/data/output/20261101/quickstatements/p5063_fixes_quickstatements.txt
-  /Users/gabri/GIT/Wordnet2Wikidata-Mappings/data/output/20261101/manual_review/p8814_manual_review.csv
-  /Users/gabri/GIT/Wordnet2Wikidata-Mappings/data/output/20261101/manual_review/p5063_manual_review.csv
+  /home/runner/work/Wordnet2Wikidata-Mappings/Wordnet2Wikidata-Mappings/data/output/20261101/quickstatements/p8814_fixes_quickstatements.txt
+  /home/runner/work/Wordnet2Wikidata-Mappings/Wordnet2Wikidata-Mappings/data/output/20261101/quickstatements/p5063_fixes_quickstatements.txt
+  /home/runner/work/Wordnet2Wikidata-Mappings/Wordnet2Wikidata-Mappings/data/output/20261101/manual_review/p8814_manual_review.csv
+  /home/runner/work/Wordnet2Wikidata-Mappings/Wordnet2Wikidata-Mappings/data/output/20261101/manual_review/p5063_manual_review.csv
 
 ======================================================================
 NEXT STEPS:
