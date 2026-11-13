@@ -29,7 +29,7 @@ from generate_proposals_v2 import WEAK_REASONS  # noqa: E402
 BASE_DIR = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = BASE_DIR / "data" / "output" / "20261101"
 IMPORT_DIR = BASE_DIR / "data" / "output" / "20260816"
-DASHBOARD_PATH = OUTPUT_DIR / "violations_dashboard.html"
+DASHBOARD_PATH = BASE_DIR / "index.html"  # repo root = stable GitHub Pages URL
 
 # Categories where neither QID matches the synset. If the source repos don't back the keep choice
 # either, the decision rests on weak signals -> human review first.
@@ -168,7 +168,7 @@ def main(run_dir=None):
         if not runs:
             sys.exit("No data/output/*/ run with p8814_violations_final.csv found.")
         OUTPUT_DIR = runs[-1]
-    DASHBOARD_PATH = OUTPUT_DIR / "violations_dashboard.html"
+    DASHBOARD_PATH = BASE_DIR / "index.html"  # repo root = stable GitHub Pages URL
 
     p8814_raw = load_csv(OUTPUT_DIR / "p8814_violations_final.csv")
     p5063_raw = load_csv(OUTPUT_DIR / "p5063_violations_final.csv")
@@ -693,7 +693,7 @@ function method(el) {
       <tr><td>2 Classify</td><td><code>categorize_all_final.py</code></td><td><code>p*_violations_final.csv</code></td></tr>
       <tr><td>3 Source cross-check</td><td><code>crosscheck_sources.py</code></td><td><code>source_crosscheck.csv</code></td></tr>
       <tr><td>4 Proposals</td><td><code>generate_proposals_v2.py</code></td><td><code>keep_decisions.csv</code>, <code>quickstatements/*.txt</code></td></tr>
-      <tr><td>5 Dashboard</td><td><code>generate_dashboard.py</code></td><td><code>violations_dashboard.html</code></td></tr>
+      <tr><td>5 Dashboard</td><td><code>generate_dashboard.py</code></td><td><code>index.html</code> (repo root)</td></tr>
       <tr><td>6 Review sheet</td><td><code>export_review_sheet.py</code> / <code>import_decisions.py</code></td><td><code>review_sheet.xlsx</code> / <code>manual_review/decisions.csv</code></td></tr>
       <tr><td colspan="3" class="muted">All of it: <code>python scripts/run_pipeline.py</code>. Superseded scripts live in <code>archive/</code>.</td></tr></table></div>
   <div class="card"><h2>Classification and keep-decision</h2>
