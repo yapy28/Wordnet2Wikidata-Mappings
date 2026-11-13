@@ -7,7 +7,7 @@ Stages (in order):
   classify   real error vs valid duplicate                                  categorize_all_final.py
   crosscheck what english-wordnet / english-namenet say per group          crosscheck_sources.py (needs the local repos; off by default)
   proposals  keep / remove per group; human decisions win                   generate_proposals_v2.py
-  dashboard  data/output/<run>/violations_dashboard.html                    generate_dashboard.py
+  dashboard  index.html (repo root, always the latest run)                  generate_dashboard.py
   sheet      data/output/<run>/review_sheet.xlsx for Google Sheets          export_review_sheet.py
   test       consistency tests
 
