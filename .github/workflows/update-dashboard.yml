@@ -1,9 +1,14 @@
 name: Update Dashboard
 
-# Regenerates proposals, dashboard and review sheet whenever the human decisions change.
+# Keeps the dashboard in step with the human decisions. Three ways in:
+#   - schedule / manual run: pull the shared Google Sheet, rebuild decisions.csv from it, regenerate
+#   - push of decisions.csv: regenerate from the file as committed (the sheet is NOT pulled, so a
+#     hand-edited decisions.csv is never overwritten)
 # The Wikidata fetch and the source-repo cross-check stay manual (they need live data and the
 # local source repos): run `python scripts/run_pipeline.py --with fetch crosscheck` locally.
 on:
+  schedule:
+    - cron: '17 */6 * * *'
   push:
     branches: [main]
     paths:
@@ -12,6 +17,10 @@ on:
 
 permissions:
   contents: write
+
+concurrency:
+  group: update-dashboard
+  cancel-in-progress: false
 
 jobs:
   update-dashboard:
@@ -25,6 +34,21 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      # Needs the repo secret REVIEW_SHEET_ID (the id in the sheet's URL, shared as "anyone with the link").
+      # A validation error in the sheet (unknown decision, conflicting tabs, ...) fails the run on purpose.
+      - name: Pull decisions from the Google Sheet
+        if: github.event_name != 'push'
+        env:
+          REVIEW_SHEET_ID: ${{ secrets.REVIEW_SHEET_ID }}
+        run: |
+          if [ -z "$REVIEW_SHEET_ID" ]; then
+            echo "REVIEW_SHEET_ID secret not set; skipping the sheet sync"
+            exit 0
+          fi
+          curl -fsSL -o "$RUNNER_TEMP/review_sheet.xlsx" \
+            "https://docs.google.com/spreadsheets/d/${REVIEW_SHEET_ID}/export?format=xlsx"
+          python scripts/import_decisions.py "$RUNNER_TEMP/review_sheet.xlsx"
+
       - name: Proposals, dashboard, review sheet, tests
         run: python scripts/run_pipeline.py --from proposals
 
@@ -36,6 +60,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Auto-update: proposals, dashboard and review sheet from decisions.csv"
+            git commit -m "Auto-update: decisions, proposals and dashboard"
             git push
           fi
