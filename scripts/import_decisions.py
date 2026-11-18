@@ -38,6 +38,7 @@ def main(xlsx, run_dir=None):
         head = [str(h or "").strip() for h in next(rows)]
         idx = {h: head.index(h) for h in ("Property", "Synset / ILI", "Decision", "Keep QID", "Note")}
         for r in rows:
+            r = list(r) + [None] * len(head)  # exports trim empty trailing cells
             action = str(r[idx["Decision"]] or "").strip().lower()
             if not action:
                 continue
