@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="card">
+  <h2>What this is</h2>
+  <p>The same Wikidata item is sometimes linked to a WordNet entry that another item also claims.
+  Invited reviewers decide, per group, which item keeps the link. Two reviewers who agree settle a group.
+  Nothing here edits Wikidata: accepted removals are exported for a person to run.</p>
+  <p class="muted">Data from run {{ run }} · {{ total }} groups.</p>
+</div>
+{% if not user %}
+  <p>Log in with your Wikimedia account to start.</p>
+{% elif not allowed %}
+  <div class="card"><b>{{ user }}</b> is not on the reviewer list yet. Ask the maintainer to add you.</div>
+{% else %}
+  <div class="card">
+    <h2>Progress</h2>
+    <p><span class="accepted">{{ counts.get('accepted', 0) }} accepted</span> ·
+       <span class="conflict">{{ counts.get('conflict', 0) }} disagreements</span> ·
+       <span class="pending">{{ counts.get('pending', 0) }} still open</span></p>
+    <p><a href="{{ url_for('review') }}"><b>Start reviewing</b></a> ·
+       <a href="{{ url_for('export_quickstatements') }}">QuickStatements</a> ·
+       <a href="{{ url_for('export_decisions') }}">decisions.csv</a></p>
+  </div>
+{% endif %}
+{% endblock %}

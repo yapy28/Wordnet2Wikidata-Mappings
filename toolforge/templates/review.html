@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block body %}
+<p class="muted">
+  {{ 'Weak groups' if only_weak else 'All groups' }} · {{ 'not yet voted by you' if only_mine else 'including ones you voted on' }}
+  — <a href="?all={{ 0 if not only_weak else 1 }}&todo={{ 1 if only_mine else 0 }}">{{ 'show all groups' if only_weak else 'show weak only' }}</a>
+  · <a href="?all={{ 1 if not only_weak else 0 }}&todo={{ 0 if only_mine else 1 }}">{{ 'include mine' if only_mine else 'hide mine' }}</a>
+</p>
+{% for r in rows %}{% set g = r.g %}
+<div class="card">
+  <b>{{ g.prop }} {{ g.value }}</b> <span class="pill {{ r.status }}">{{ r.status }}{% if r.decision %}: {{ r.decision[0] }} {{ r.decision[1] }}{% endif %}</span>
+  <div>{{ g.sdef }}</div>
+  <div class="muted">Members: {{ g.mem }} · {{ g.cat }}</div>
+  <pre>{{ g['items'] }}</pre>
+  <div class="muted">Source repos say: {{ g.source }} · Proposal: {{ g.reason }}</div>
+  {% if r.votes %}<div class="muted">Votes: {% for v in r.votes %}{{ v.reviewer }} → {{ v.action }}{% if v.keep_qid %} {{ v.keep_qid }}{% endif %}{% if v.note %} ("{{ v.note }}"){% endif %}{% if not loop.last %}; {% endif %}{% endfor %}</div>{% endif %}
+  <form class="vote" method="post" action="{{ url_for('vote') }}">
+    <input type="hidden" name="prop" value="{{ g.prop }}"><input type="hidden" name="value" value="{{ g.value }}">
+    <select name="action">{% for a in ['keep','leave','defer'] %}<option value="{{ a }}" {{ 'selected' if r.mine and r.mine.action == a }}>{{ a }}</option>{% endfor %}</select>
+    <select name="keep_qid"><option value="">keep which item?</option>{% for q in g.qids %}<option value="{{ q }}" {{ 'selected' if r.mine and r.mine.keep_qid == q }}>{{ q }}</option>{% endfor %}</select>
+    <input name="note" placeholder="note (optional)" value="{{ r.mine.note if r.mine }}" size="30">
+    <button>Save</button>
+  </form>
+</div>
+{% else %}
+<div class="card">Nothing left here. 🎉</div>
+{% endfor %}
+{% endblock %}
