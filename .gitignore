@@ -443,3 +443,7 @@ scripts/data_sources/
 # Generated output files
 scripts/output/
 .venv/
+
+# Review app (toolforge/): local database and secrets
+toolforge/review.db
+toolforge/config.toml
