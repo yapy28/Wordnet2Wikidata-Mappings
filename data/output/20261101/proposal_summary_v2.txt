@@ -3,7 +3,7 @@
 PROPOSAL GENERATION SUMMARY - v2
 ======================================================================
 
-Generated: 2026-11-24 09:50:51
+Generated: 2026-11-24 22:24:07
 
 P8814 (WordNet Synset ID) Violations:
   Total:           1,977
