@@ -28,6 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 REASON = {
     "source": "Source repos name it", "decision": "Human decision", "decision_leave": "Human decision: keep both",
+    "decision_remove": "Human decision: nobody keeps it",
     "defer": "Deferred", "members_note": "Label is in synset members", "similarity_note": "Best similarity score",
     "label_in_members": "Label is in synset members", "label_in_definition": "Label appears in definition",
     "score": "Best label/definition score", "score_tie": "Tie - no clear winner", "fallback": "No evidence (first listed)",
@@ -44,14 +45,15 @@ HEADER_NOTES = {
     "Source repos say": "What english-wordnet / english-namenet map this value to. These are the original source of the mappings, the strongest evidence we have.",
     "Why this keep": "Why the proposal keeps this item. 'Tie' and 'No evidence' are weak: a human should look.",
     "Weak?": "YES = the proposal rests on weak signals (no source QID and no clear winner). Check these first.",
-    "Decision": "keep = keep the QID in 'Keep QID' and remove the value from the others. leave = valid duplicate, remove nothing. defer = not sure, hold. Empty = no decision, the proposal stands.",
+    "Decision": "keep = keep the QID in 'Keep QID' and remove the value from the others. leave = valid duplicate, remove nothing. remove = the value belongs on none of these items; every statement in the group is removed. defer = not sure, hold. Empty = no decision, the proposal stands.",
     "Keep QID": "Only for 'keep': the item that keeps the value (must be one of the items in the group). Prefilled with the current proposal.",
     "Note": "Why you decided this. Shown in the dashboard.",
 }
 GUIDE = [
     ("What this is", "Duplicate WordNet-to-Wikidata mappings (P8814 synset IDs, P5063 ILIs). Each row is one group of Wikidata items that share the same value."),
-    ("What to do", "Go to 'Review queue'. For each row pick a Decision (keep / leave / defer), set Keep QID if you chose keep, add a Note. Only the yellow columns are yours."),
+    ("What to do", "Go to 'Review queue'. For each row pick a Decision (keep / leave / remove / defer), set Keep QID if you chose keep, add a Note. Only the yellow columns are yours."),
     ("Rule of thumb", "WordNet is a lumper, Wikidata is a splitter: synsets deliberately group synonyms, so a duplicate is often a legitimate synonym pair. When in doubt: leave."),
+    ("Neither item is right", "If the value maps to none of the items (the synset is not any of these concepts), pick remove: every statement in the group is removed, and the value goes back on the backlog for a proper mapping later."),
     ("Redirects", "Keep redirects (e.g. Q272388 redirects to Q202526). Never remove the statement a redirect depends on."),
     ("Defunct / new items", "Wikidata has items for defunct names that WordNet picked up. New Wikidata IDs are taken with a grain of salt: prefer established items as the keep."),
     ("Different concepts", "If the items are genuinely different (cholestasis vs acholia), leave both and say so in the Note: we propose a WordNet-side synset split instead of removing anything."),
@@ -114,7 +116,7 @@ def build_groups(run_dir):
                 "items": lines(rs, value),
                 "source": ", ".join(first["src"]) if first["src"] else "(no QID in source repos)",
                 "reason": REASON.get(first["reason"], first["reason"]) + (f' - {first["dnote"]}' if first["dnote"] else ""),
-                "weak": "YES" if any(r["rev"] for r in rs) and d.get("action") not in ("keep", "leave") else "",
+                "weak": "YES" if any(r["rev"] for r in rs) and d.get("action") not in ("keep", "leave", "remove") else "",
                 "action": d.get("action", ""), "keep_qid": d.get("keep_qid") or keep, "note": d.get("note", ""),
             })
     return groups
@@ -150,8 +152,8 @@ def write_groups(wb, title, groups):
             cell.alignment = Alignment(wrap_text=True, vertical="top")
             if name in INPUT_COLS:
                 cell.fill = yellow
-    dv = DataValidation(type="list", formula1='"keep,leave,defer"', allow_blank=True, showErrorMessage=True,
-                        errorTitle="Decision", error="Pick keep, leave or defer (or clear the cell).")
+    dv = DataValidation(type="list", formula1='"keep,leave,defer,remove"', allow_blank=True, showErrorMessage=True,
+                        errorTitle="Decision", error="Pick keep, leave, defer or remove (or clear the cell).")
     ws.add_data_validation(dv)
     dv.add(f"J2:J{max(ws.max_row, 2)}")
     ws.freeze_panes = "C2"

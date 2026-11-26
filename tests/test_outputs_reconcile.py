@@ -33,6 +33,8 @@ class ReconcileTests(unittest.TestCase):
         self.dnotes = {k: d.get("note", "") for k, d in self.decisions.items()}
         # groups held by a human decision: no removals, keep_qid empty
         self.held = {k for k, d in self.decisions.items() if d["reason"] in ("decision_leave", "defer")}
+        # groups where nobody keeps the value: every statement is removed
+        self.remove_all = {k for k, d in self.decisions.items() if d["reason"] == "decision_remove"}
 
     def real_groups(self, prop):
         g = defaultdict(set)
@@ -45,7 +47,8 @@ class ReconcileTests(unittest.TestCase):
         for prop in ("P8814", "P5063"):
             g = self.real_groups(prop)
             active = {v: q for v, q in g.items() if (prop, v) not in self.held}
-            self.assertEqual(len(self.fix[prop]), sum(len(q) for q in active.values()) - len(active), prop)
+            keeps = sum(1 for v in active if (prop, v) not in self.remove_all)
+            self.assertEqual(len(self.fix[prop]), sum(len(q) for q in active.values()) - keeps, prop)
 
     def test_roles_partition_every_row(self):
         for prop, field in (("P8814", "synset_id"), ("P5063", "ili")):
@@ -55,7 +58,7 @@ class ReconcileTests(unittest.TestCase):
             self.assertEqual(counts["unresolved"], 0, prop)
             self.assertEqual(sum(counts.values()), len(self.violations[prop]))
             self.assertEqual(counts["remove"], len(self.fix[prop]))
-            self.assertEqual(counts["keep"], len(self.real_groups(prop)) - held_groups)
+            self.assertEqual(counts["keep"], len(self.real_groups(prop)) - held_groups - len(self.remove_all))
 
     def test_every_group_has_one_keep_inside_the_group(self):
         for prop in ("P8814", "P5063"):
@@ -64,6 +67,10 @@ class ReconcileTests(unittest.TestCase):
                 if (prop, value) in self.held:
                     self.assertEqual(d["keep_qid"], "")
                     self.assertEqual(d["remove_qids"], "")
+                    continue
+                if (prop, value) in self.remove_all:
+                    self.assertEqual(d["keep_qid"], "")
+                    self.assertEqual(set(d["remove_qids"].split("|")), qids)
                     continue
                 self.assertIn(d["keep_qid"], qids)
                 self.assertEqual(set(d["remove_qids"].split("|")), qids - {d["keep_qid"]})
@@ -81,7 +88,7 @@ class ReconcileTests(unittest.TestCase):
             key = (r["prop"], r["value"])
             if r["source_pick"] and key in self.decisions:
                 d = self.decisions[key]
-                if d["reason"] in ("decision", "decision_leave", "defer"):
+                if d["reason"] in ("decision", "decision_leave", "decision_remove", "defer"):
                     continue  # a human decision overrides the source pick by design
                 self.assertEqual(d["keep_qid"], r["source_pick"])
 
@@ -93,7 +100,8 @@ class ReconcileTests(unittest.TestCase):
 
     def test_quickstatements_lines_are_well_formed(self):
         for prop, name in (("P8814", "p8814"), ("P5063", "p5063")):
-            pattern = re.compile(rf"^-Q\d+\|{prop}\|[^|]+\|S248\|Q\d+$")
+            # '-Q|prop|value|S248|keep' normally; '-Q|prop|value' for decision-remove groups
+            pattern = re.compile(rf"^-Q\d+\|{prop}\|[^|]+(\|S248\|Q\d+)?$")
             for line in (RUN / f"quickstatements/{name}_fixes_quickstatements.txt").read_text().splitlines():
                 if line.startswith("-Q"):
                     self.assertRegex(line, pattern)

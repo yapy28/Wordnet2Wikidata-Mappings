@@ -22,7 +22,7 @@ MANUAL_REVIEW_DIR = OUTPUT_DIR / "manual_review"
 
 
 WEAK_REASONS = {"fallback", "score_tie"}  # keep chosen without real evidence -> needs a human
-DECISION_ACTIONS = {"keep", "leave", "defer"}
+DECISION_ACTIONS = {"keep", "leave", "defer", "remove"}
 
 
 def load_decisions(path=None):
@@ -31,6 +31,7 @@ def load_decisions(path=None):
     action=keep: keep keep_qid, remove the statement from every other QID in the group.
     action=leave: no removals - the group is treated as a valid duplicate.
     action=defer: no removals yet - the group stays in the review queue.
+    action=remove: the value belongs on none of the items; remove every statement in the group.
     Rows with an empty action are template placeholders and are ignored.
     Decisions beat the source pick, which beats the heuristics (reason 'decision').
     """
@@ -63,14 +64,18 @@ def check_unknown_decisions(decisions, seen_groups):
 
 
 def apply_decision(decision, qid_data_list, decision_key):
-    """Turn a group's decision into (keep_qid, reason) or a hold action.
+    """Turn a group's decision into (keep_qid, reason) or a hold / remove-all action.
 
-    Returns ('hold', reason) for leave/defer; ('keep'/'remove' handling stays with the caller).
+    Returns ('hold', reason) for leave/defer, ('remove', 'decision_remove') for remove
+    (no item keeps the value; the caller emits statement removals for every QID);
+    ('keep'/'remove' handling stays with the caller).
     """
     if decision["action"] == "leave":
         return "hold", "decision_leave"
     if decision["action"] == "defer":
         return "hold", "defer"
+    if decision["action"] == "remove":
+        return "remove", "decision_remove"
     if decision["action"] == "keep":
         group_qids = [q["qid"] for q in qid_data_list]
         if decision["keep_qid"] not in group_qids:
@@ -223,6 +228,14 @@ def process_p8814_violations(source_picks, decisions, keep_log, seen_groups):
                 keep_log.append({'prop': 'P8814', 'value': synset_id, 'keep_qid': '',
                                  'reason': reason, 'remove_qids': '', 'note': decision['note']})
                 continue
+            if keep_or_hold == "remove":
+                keep_log.append({'prop': 'P8814', 'value': synset_id, 'keep_qid': '',
+                                 'reason': reason,
+                                 'remove_qids': '|'.join(q['qid'] for q in qid_data_list),
+                                 'note': decision['note']})
+                for qd in qid_data_list:
+                    quickstatements.append(f"-{qd['qid']}|P8814|{synset_id}")
+                continue
             keep_qid, reason = keep_or_hold, reason
         else:
             keep_qid, reason = choose_keep_p8814(qid_data_list, source_picks.get(('P8814', synset_id)))
@@ -316,6 +329,14 @@ def process_p5063_violations(source_picks, decisions, keep_log, seen_groups):
             if keep_or_hold == "hold":
                 keep_log.append({'prop': 'P5063', 'value': ili, 'keep_qid': '',
                                  'reason': reason, 'remove_qids': '', 'note': decision['note']})
+                continue
+            if keep_or_hold == "remove":
+                keep_log.append({'prop': 'P5063', 'value': ili, 'keep_qid': '',
+                                 'reason': reason,
+                                 'remove_qids': '|'.join(q['qid'] for q in qid_data_list),
+                                 'note': decision['note']})
+                for qd in qid_data_list:
+                    quickstatements.append(f"-{qd['qid']}|P5063|{ili}")
                 continue
             best_qid, reason = keep_or_hold, reason
         else:
