@@ -423,6 +423,8 @@ FodyWeavers.xsd
 
 # Local working notes (do not push)
 working.md
+docs/*_draft.md
+docs/*_walkthrough.md
 
 # macOS metadata files
 .DS_Store
