@@ -423,6 +423,12 @@ FodyWeavers.xsd
 
 # Local working notes (do not push)
 working.md
+docs/*_draft.md
+docs/*_walkthrough.md
+docs/INTERACTIVE_PLAN.md
+docs/WORKFLOW.md
+docs/comparison_pipeline.md
+docs/constraint_violation_analysis.md
 
 # macOS metadata files
 .DS_Store
@@ -443,3 +449,7 @@ scripts/data_sources/
 # Generated output files
 scripts/output/
 .venv/
+
+# Review app (toolforge/): local database and secrets
+toolforge/review.db
+toolforge/config.toml

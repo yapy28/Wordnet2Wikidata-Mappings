@@ -2,6 +2,9 @@
 
 Finished work, newest first: `- YYYY-MM-DD: what (link/commit)`.
 
+- 2026-11-26: Folded `docs/WORKFLOW.md` into the live docs; session notes taken out of the repo (gitignored, kept local)
+  - Lineage table and the "adding new mappings" plan now live in `README.md`; open items moved to `TODO.md`
+  - Round-one state, preserved here: 2,354 statements = 1,351 valid + 488 keep + 515 remove; source cross-check confirmed 192 of 416 P8814 groups, flipped 52 removal lines that contradicted the source, and flagged 44 of 72 P5063 keeps as weak (tie / no evidence); 84% of flagged statements pre-date the import, 158 involve statements our import asserted
 - 2026-11-01: Comprehensive dashboard with comparison table and hyperlinks - commit [a03fce8](https://github.com/yapy28/Wordnet2Wikidata-Mappings/commit/a03fce8)
   - Added hyperlinks to QIDs (Wikidata), ILIs, and synset IDs in comparison table
   - Fixed dashboard layout to prevent overlay issues
@@ -52,7 +55,7 @@ Finished work, newest first: `- YYYY-MM-DD: what (link/commit)`.
 - All fixes are Wikidata-side (not source repos)
 - Maintain violation data + QuickStatements + comparison table in one ecosystem
 - Use tab-based navigation for dashboard (replaces broken scroll-based ToC)
-- System architecture documented in docs/SYSTEM_ARCHITECTURE.md
+- System architecture documented in archive/docs/SYSTEM_ARCHITECTURE.md
 
 ## Links
 

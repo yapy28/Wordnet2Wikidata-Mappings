@@ -78,7 +78,21 @@ These are recorded in `data/output/20261101/manual_review/decisions.csv` and ove
 
 ### References
 
-- System architecture: See `docs/SYSTEM_ARCHITECTURE.md`
-- Constraint violation methodology: See `docs/constraint_violation_analysis.md`
+- System architecture (superseded): See `archive/docs/SYSTEM_ARCHITECTURE.md`
 - Previous work: See `DONE.md`
 - Detailed findings: See `FINDINGS.md`
+
+### Before any removal runs on Wikidata (folded in from docs/WORKFLOW.md, 2026-11-01)
+
+1. **Weak decisions** (review queue tab): P8814 groups with no source QID and no label in members (80), P5063 ties (44).
+2. **57 P5063 ILIs**: the source repos map the ILI to *both* QIDs. Decide per case: valid duplicate, or source-side fix by PR.
+3. **7 P8814 synsets** where the source names a QID that is not one of the duplicated items: that QID may be missing the statement.
+4. **QuickStatements format for keep-groups**: the generator still writes the old `-QID|prop|value|S248|keep` form; the dashboard's Fixes tab shows the correct quoted form (remove-groups already use it).
+5. **Test batch**: run 5-10 removals where the source repos are silent and both statements pre-date the import, then re-check the constraint report.
+
+### Later (folded in)
+
+- **Closing loop**: re-fetch violations after fixes run and record what was applied (`fix_applied` is `FALSE` everywhere today).
+- **(confirm)** Which PRs went to english-wordnet / english-namenet / CILI and their merge state; whether the 2026-09-29 QID-sync fork commits should be PR'd.
+- **127 synsets with a QID but no ILI** (`missing_ilis_verified.csv`): needs CILI work.
+- **Adding new mappings**: see the "Adding new mappings" section of `README.md`.
