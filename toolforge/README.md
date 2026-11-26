@@ -4,7 +4,7 @@ Invited reviewers log in with their Wikimedia account, vote keep / leave / defer
 group, and a group is accepted when two reviewers agree. `remove` means no item keeps the value: every
 statement in the group is removal-proposed. The app never edits Wikidata; it exports
 QuickStatements (`/export/quickstatements.txt`) and a `decisions.csv` (`/export/decisions.csv`).
-Plan and decisions: `docs/INTERACTIVE_PLAN.md`. Status: first slice, works locally, not deployed.
+Status: first slice, works locally, not deployed.
 
 ## Run locally
 

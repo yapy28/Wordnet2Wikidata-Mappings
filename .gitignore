@@ -425,6 +425,10 @@ FodyWeavers.xsd
 working.md
 docs/*_draft.md
 docs/*_walkthrough.md
+docs/INTERACTIVE_PLAN.md
+docs/WORKFLOW.md
+docs/comparison_pipeline.md
+docs/constraint_violation_analysis.md
 
 # macOS metadata files
 .DS_Store
