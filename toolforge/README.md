@@ -1,7 +1,8 @@
 # Review app (Toolforge)
 
-Invited reviewers log in with their Wikimedia account, vote keep / leave / defer per duplicate group,
-and a group is accepted when two reviewers agree. The app never edits Wikidata; it exports
+Invited reviewers log in with their Wikimedia account, vote keep / leave / defer / remove per duplicate
+group, and a group is accepted when two reviewers agree. `remove` means no item keeps the value: every
+statement in the group is removal-proposed. The app never edits Wikidata; it exports
 QuickStatements (`/export/quickstatements.txt`) and a `decisions.csv` (`/export/decisions.csv`).
 Plan and decisions: `docs/INTERACTIVE_PLAN.md`. Status: first slice, works locally, not deployed.
 

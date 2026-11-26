@@ -46,6 +46,13 @@ class GroupStatus(unittest.TestCase):
     def test_two_defers_never_accept(self):
         self.assertNotEqual(review.group_status([self.v("defer"), self.v("defer")])[0], "accepted")
 
+    def test_two_removes_accept_with_no_keep(self):
+        self.assertEqual(review.group_status([self.v("remove"), self.v("remove")]),
+                         ("accepted", ("remove", "")))
+
+    def test_keep_against_remove_is_conflict(self):
+        self.assertEqual(review.group_status([self.v("keep", "Q1"), self.v("remove")])[0], "conflict")
+
 
 class Flow(unittest.TestCase):
     def setUp(self):
@@ -91,6 +98,14 @@ class Flow(unittest.TestCase):
             login(self.c, name)
             vote(self.c, "leave")
         self.assertEqual(self.c.get("/export/quickstatements.txt").get_data(as_text=True), "")
+
+    def test_remove_exports_every_qid(self):
+        for name in ("alice", "bob"):
+            login(self.c, name)
+            self.assertEqual(vote(self.c, "remove", keep=G["qids"][0]).status_code, 302)
+        qs = self.c.get("/export/quickstatements.txt").get_data(as_text=True)
+        self.assertEqual(qs.strip().splitlines(), [f'-{q}|{G["prop"]}|"{G["value"]}"' for q in G["qids"]])
+        self.assertIn(f'{G["prop"]},{G["value"]},remove,,', self.c.get("/export/decisions.csv").get_data(as_text=True))
 
 
 if __name__ == "__main__":

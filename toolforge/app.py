@@ -1,8 +1,9 @@
 """
 Review app for duplicate WordNet-to-Wikidata mappings (Toolforge).
 
-Invited reviewers log in with their Wikimedia account (OAuth), vote keep / leave / defer on each
-duplicate group, and a group is accepted when two reviewers agree. The app never edits Wikidata:
+Invited reviewers log in with their Wikimedia account (OAuth), vote keep / leave / defer / remove
+on each duplicate group, and a group is accepted when two reviewers agree. 'remove' means no item
+keeps the value: every statement in the group is removed. The app never edits Wikidata:
 accepted removals are exported as QuickStatements for a person to run.
 
 Groups come from groups.json (scripts/export_groups.py). Votes live in a SQL database:
@@ -24,7 +25,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.pool import StaticPool
 
 HERE = Path(__file__).resolve().parent
-ACTIONS = ("keep", "leave", "defer")
+ACTIONS = ("keep", "leave", "defer", "remove")
 AGREE = 2  # reviewers who must pick the same decision for a group to be accepted
 USER_AGENT = "Wordnet2Wikidata-review (https://github.com/Yapy28/Wordnet2Wikidata-Mappings)"
 
@@ -205,9 +206,10 @@ def create_app(config=None):
         require_reviewer()
         lines = []
         for g, (action, keep) in accepted():
-            if action != "keep":
-                continue
-            lines += [f'-{q}|{g["prop"]}|"{g["value"]}"' for q in g["qids"] if q != keep]
+            if action == "keep":
+                lines += [f'-{q}|{g["prop"]}|"{g["value"]}"' for q in g["qids"] if q != keep]
+            elif action == "remove":
+                lines += [f'-{q}|{g["prop"]}|"{g["value"]}"' for q in g["qids"]]
         return Response("\n".join(lines) + ("\n" if lines else ""), mimetype="text/plain")
 
     @app.get("/export/decisions.csv")

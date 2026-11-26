@@ -18,7 +18,7 @@ from openpyxl import load_workbook
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from export_review_sheet import BASE_DIR, build_groups  # noqa: E402
 
-VALID_ACTIONS = {"keep", "leave", "defer"}
+VALID_ACTIONS = {"keep", "leave", "defer", "remove"}
 
 
 def main(xlsx, run_dir=None):

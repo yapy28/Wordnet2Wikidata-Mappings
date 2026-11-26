@@ -64,7 +64,7 @@ def count_lines(path):
 
 
 def load_fixes(path):
-    """Parse '-QID|Pxxx|value|S248|keep' lines -> list of dicts."""
+    """Parse '-QID|Pxxx|value[|S248|keep]' lines -> list of dicts (no keep part for decision-remove groups)."""
     fixes = []
     with open(path, encoding="utf-8") as f:
         for line in f:
@@ -72,7 +72,8 @@ def load_fixes(path):
             if not line.startswith("-Q"):
                 continue
             parts = line.split("|")
-            fixes.append({"remove": parts[0][1:], "prop": parts[1], "value": parts[2], "keep": parts[4]})
+            fixes.append({"remove": parts[0][1:], "prop": parts[1], "value": parts[2],
+                          "keep": parts[4] if len(parts) > 4 else ""})
     return fixes
 
 
@@ -134,7 +135,7 @@ def build_rows(violations, fixes, value_field, prop, crosscheck, reasons, dnotes
             role, keep = "unresolved", ""
         src_qids = crosscheck.get((prop, value), {}).get("source_qids", [])
         weak = role in ("remove", "keep") and (
-            reason in WEAK_REASONS or (v["category"] in REVIEW_CATEGORIES and reason not in ("source", "decision")))
+            reason in WEAK_REASONS or (v["category"] in REVIEW_CATEGORIES and reason not in ("source", "decision", "decision_remove")))
         rows.append({
             "q": v["qid"],
             "lab": v["wikidata_label"],
@@ -250,7 +251,7 @@ def main(run_dir=None):
         ("quickstatements/p5063_fixes_quickstatements.txt", "P5063 removals (original format, see Fixes tab)"),
         ("source_crosscheck.csv", "What english-wordnet / english-namenet say for every duplicate group"),
         ("keep_decisions.csv", "Which QID is kept per group, and why (source / members / similarity / tie / fallback)"),
-        ("manual_review/decisions.csv", "Human decisions per duplicate group (keep / leave / defer); generate_proposals_v2.py consumes them"),
+        ("manual_review/decisions.csv", "Human decisions per duplicate group (keep / leave / defer / remove); generate_proposals_v2.py consumes them"),
         ("manual_review/p8814_manual_review.csv", "P8814 review queue (weak keep-decision categories)"),
         ("manual_review/p5063_manual_review.csv", "P5063 review queue (empty)"),
         ("missing_ilis_verified.csv", "Synsets with a QID but no ILI, verified"),

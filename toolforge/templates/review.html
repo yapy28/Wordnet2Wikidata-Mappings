@@ -15,7 +15,7 @@
   {% if r.votes %}<div class="muted">Votes: {% for v in r.votes %}{{ v.reviewer }} → {{ v.action }}{% if v.keep_qid %} {{ v.keep_qid }}{% endif %}{% if v.note %} ("{{ v.note }}"){% endif %}{% if not loop.last %}; {% endif %}{% endfor %}</div>{% endif %}
   <form class="vote" method="post" action="{{ url_for('vote') }}">
     <input type="hidden" name="prop" value="{{ g.prop }}"><input type="hidden" name="value" value="{{ g.value }}">
-    <select name="action">{% for a in ['keep','leave','defer'] %}<option value="{{ a }}" {{ 'selected' if r.mine and r.mine.action == a }}>{{ a }}</option>{% endfor %}</select>
+    <select name="action">{% for a in ['keep','leave','defer','remove'] %}<option value="{{ a }}" {{ 'selected' if r.mine and r.mine.action == a }}>{{ a }}</option>{% endfor %}</select>
     <select name="keep_qid"><option value="">keep which item?</option>{% for q in g.qids %}<option value="{{ q }}" {{ 'selected' if r.mine and r.mine.keep_qid == q }}>{{ q }}</option>{% endfor %}</select>
     <input name="note" placeholder="note (optional)" value="{{ r.mine.note if r.mine }}" size="30">
     <button>Save</button>
