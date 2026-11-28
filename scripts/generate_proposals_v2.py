@@ -22,16 +22,23 @@ MANUAL_REVIEW_DIR = OUTPUT_DIR / "manual_review"
 
 
 WEAK_REASONS = {"fallback", "score_tie"}  # keep chosen without real evidence -> needs a human
-DECISION_ACTIONS = {"keep", "leave", "defer", "remove"}
+DECISION_ACTIONS = ("keep one", "keep all", "remove all", "decide later")
+LEGACY_ACTIONS = {"keep": "keep one", "leave": "keep all", "remove": "remove all", "defer": "decide later"}
+
+
+def normalize_action(action):
+    """Lower-cased decision with the old words (keep / leave / remove / defer) mapped to the new ones."""
+    action = (action or "").strip().lower()
+    return LEGACY_ACTIONS.get(action, action)
 
 
 def load_decisions(path=None):
     """Human decisions from manual_review/decisions.csv (optional; one row per duplicate group).
 
-    action=keep: keep keep_qid, remove the statement from every other QID in the group.
-    action=leave: no removals - the group is treated as a valid duplicate.
-    action=defer: no removals yet - the group stays in the review queue.
-    action=remove: the value belongs on none of the items; remove every statement in the group.
+    keep one: keep keep_qid, remove the statement from every other QID in the group.
+    keep all: no removals - the group is a valid duplicate.
+    remove all: the value belongs on none of the items; remove every statement in the group.
+    decide later: no removals yet - the group still needs review.
     Rows with an empty action are template placeholders and are ignored.
     Decisions beat the source pick, which beats the heuristics (reason 'decision').
     """
@@ -42,7 +49,7 @@ def load_decisions(path=None):
     with open(path, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
             key = (row.get("prop", "").strip(), row.get("value", "").strip())
-            action = (row.get("action") or "").strip().lower()
+            action = normalize_action(row.get("action"))
             if not action:
                 continue
             if action not in DECISION_ACTIONS:
@@ -66,17 +73,17 @@ def check_unknown_decisions(decisions, seen_groups):
 def apply_decision(decision, qid_data_list, decision_key):
     """Turn a group's decision into (keep_qid, reason) or a hold / remove-all action.
 
-    Returns ('hold', reason) for leave/defer, ('remove', 'decision_remove') for remove
+    Returns ('hold', reason) for keep all / decide later, ('remove', 'decision_remove') for remove all
     (no item keeps the value; the caller emits statement removals for every QID);
     ('keep'/'remove' handling stays with the caller).
     """
-    if decision["action"] == "leave":
+    if decision["action"] == "keep all":
         return "hold", "decision_leave"
-    if decision["action"] == "defer":
+    if decision["action"] == "decide later":
         return "hold", "defer"
-    if decision["action"] == "remove":
+    if decision["action"] == "remove all":
         return "remove", "decision_remove"
-    if decision["action"] == "keep":
+    if decision["action"] == "keep one":
         group_qids = [q["qid"] for q in qid_data_list]
         if decision["keep_qid"] not in group_qids:
             raise ValueError(f"decisions.csv: keep_qid {decision['keep_qid']} is not in the "

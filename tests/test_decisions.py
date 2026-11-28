@@ -29,23 +29,29 @@ class LoadDecisionsTests(unittest.TestCase):
         self.assertEqual(gp.load_decisions(path=self.write([decision_row("P8814", "0000-n", "")])), {})
 
     def test_keep_leave_defer(self):
-        p = self.write([decision_row("P8814", "0000-n", "keep", "Q1", "n1"),
-                        decision_row("P5063", "i1", "leave", note="n2"),
-                        decision_row("P5063", "i2", "defer"),
-                        decision_row("P8814", "0001-n", "remove", note="nobody keeps it")])
+        p = self.write([decision_row("P8814", "0000-n", "keep one", "Q1", "n1"),
+                        decision_row("P5063", "i1", "keep all", note="n2"),
+                        decision_row("P5063", "i2", "decide later"),
+                        decision_row("P8814", "0001-n", "remove all", note="nobody keeps it")])
         d = gp.load_decisions(path=p)
-        self.assertEqual(d[("P8814", "0000-n")], {"action": "keep", "keep_qid": "Q1", "note": "n1"})
-        self.assertEqual(d[("P5063", "i1")]["action"], "leave")
+        self.assertEqual(d[("P8814", "0000-n")], {"action": "keep one", "keep_qid": "Q1", "note": "n1"})
+        self.assertEqual(d[("P5063", "i1")]["action"], "keep all")
         self.assertEqual(d[("P5063", "i2")]["note"], "")
-        self.assertEqual(d[("P8814", "0001-n")], {"action": "remove", "keep_qid": "", "note": "nobody keeps it"})
+        self.assertEqual(d[("P8814", "0001-n")], {"action": "remove all", "keep_qid": "", "note": "nobody keeps it"})
+
+    def test_old_words_are_rewritten(self):
+        p = self.write([decision_row("P8814", "0000-n", "keep", "Q1"), decision_row("P8814", "0001-n", "leave"),
+                        decision_row("P5063", "i1", "Defer"), decision_row("P5063", "i2", "remove")])
+        self.assertEqual([d["action"] for d in gp.load_decisions(path=p).values()],
+                         ["keep one", "keep all", "decide later", "remove all"])
 
     def test_unknown_action_raises(self):
         with self.assertRaises(ValueError):
             gp.load_decisions(path=self.write([decision_row("P8814", "0000-n", "delete")]))
 
     def test_duplicate_group_raises(self):
-        p = self.write([decision_row("P8814", "0000-n", "keep", "Q1"),
-                        decision_row("P8814", "0000-n", "leave")])
+        p = self.write([decision_row("P8814", "0000-n", "keep one", "Q1"),
+                        decision_row("P8814", "0000-n", "keep all")])
         with self.assertRaises(ValueError):
             gp.load_decisions(path=p)
 
@@ -54,24 +60,24 @@ class ApplyDecisionTests(unittest.TestCase):
     group = [{"qid": "Q1"}, {"qid": "Q2"}]
 
     def test_keep_uses_decided_qid(self):
-        d = {"action": "keep", "keep_qid": "Q2", "note": "x"}
+        d = {"action": "keep one", "keep_qid": "Q2", "note": "x"}
         self.assertEqual(gp.apply_decision(d, self.group, ("P8814", "s")), ("Q2", "decision"))
 
     def test_keep_qid_outside_group_raises(self):
-        d = {"action": "keep", "keep_qid": "Q9", "note": ""}
+        d = {"action": "keep one", "keep_qid": "Q9", "note": ""}
         with self.assertRaises(ValueError):
             gp.apply_decision(d, self.group, ("P8814", "s"))
 
     def test_leave_holds_as_decision_leave(self):
-        d = {"action": "leave", "keep_qid": "", "note": ""}
+        d = {"action": "keep all", "keep_qid": "", "note": ""}
         self.assertEqual(gp.apply_decision(d, self.group, ("P8814", "s")), ("hold", "decision_leave"))
 
     def test_defer_holds(self):
-        d = {"action": "defer", "keep_qid": "", "note": ""}
+        d = {"action": "decide later", "keep_qid": "", "note": ""}
         self.assertEqual(gp.apply_decision(d, self.group, ("P8814", "s")), ("hold", "defer"))
 
     def test_remove_returns_remove_all(self):
-        d = {"action": "remove", "keep_qid": "", "note": "nobody keeps it"}
+        d = {"action": "remove all", "keep_qid": "", "note": "nobody keeps it"}
         self.assertEqual(gp.apply_decision(d, self.group, ("P8814", "s")), ("remove", "decision_remove"))
 
 

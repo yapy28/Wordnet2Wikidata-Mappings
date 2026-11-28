@@ -251,7 +251,7 @@ def main(run_dir=None):
         ("quickstatements/p5063_fixes_quickstatements.txt", "P5063 removals (original format, see Fixes tab)"),
         ("source_crosscheck.csv", "What english-wordnet / english-namenet say for every duplicate group"),
         ("keep_decisions.csv", "Which QID is kept per group, and why (source / members / similarity / tie / fallback)"),
-        ("manual_review/decisions.csv", "Human decisions per duplicate group (keep / leave / defer / remove); generate_proposals_v2.py consumes them"),
+        ("manual_review/decisions.csv", "Human decisions per duplicate group (keep one / keep all / remove all / decide later); generate_proposals_v2.py consumes them"),
         ("manual_review/p8814_manual_review.csv", "P8814 review queue (weak keep-decision categories)"),
         ("manual_review/p5063_manual_review.csv", "P5063 review queue (empty)"),
         ("missing_ilis_verified.csv", "Synsets with a QID but no ILI, verified"),
@@ -443,7 +443,7 @@ const GROUPS = {}; [...D.p8814, ...D.p5063].forEach(r => (GROUPS[r.prop === 'P50
 const sibs = r => (GROUPS[r.prop === 'P5063' ? '5:'+r.ili : '8:'+r.sid] || []).filter(x => x.q !== r.q);
 const nameNotes = t => esc(t).replace(/\bQ\d+\b/g, q => LAB[q] ? `${LAB[q]} (${q})` : q);
 const catLabel = c => D.labels[c] || c;
-const ROLE = {remove:'Remove', keep:'Keep', valid:'Valid', unresolved:'Unresolved', deferred:'Deferred'};
+const ROLE = {remove:'Remove', keep:'Keep', valid:'Valid', unresolved:'Unresolved', deferred:'Decide later'};
 const rolePill = r => `<span class="pill ${r.role}">${ROLE[r.role]}</span>`;
 const revPill = r => r.rev ? '<span class="pill rev" title="Weak keep-decision: check before removing">review</span>' : '';
 
@@ -493,8 +493,8 @@ const catOpts = rows => () => [...new Set(rows.map(r => r.cat))].sort().map(c =>
 const srcFilters = [{k:'se',label:'Source: any',opts:() => Object.entries(SE),get:r=>r.se},
   {k:'reason',label:'Reason: any',opts:() => Object.entries(REASON),get:r=>r.reason}];
 const roleOpts = () => [['remove','Remove'],['keep','Keep (canonical)'],['valid','Valid (no fix)']];
-const REASON = {source:'Source repos name it', decision:'Human decision (decisions.csv)', decision_leave:'Human decision: keep both (decisions.csv)',
-  defer:'Deferred — awaiting a decision', members_note:'Label is in synset members', similarity_note:'Best similarity score',
+const REASON = {source:'Source repos name it', decision:'Human decision: keep one', decision_leave:'Human decision: keep all',
+  decision_remove:'Human decision: remove all', defer:'Human decision: decide later', members_note:'Label is in synset members', similarity_note:'Best similarity score',
   label_in_members:'Label is in synset members', label_in_definition:'Label appears in definition', score:'Best label/definition score',
   score_tie:'Tie — no clear winner', fallback:'No evidence (first listed)'};
 const WEAK = new Set(['score_tie','fallback']);
@@ -518,7 +518,7 @@ const violationCols = (extra = []) => [
   {grp:'wn', k:'se', label:'Source repos say', cls:'wide', render:srcCell, text:r => SE[r.se]+' '+r.src.map(q => (LAB[q]||'')+' '+q).join(' ')},
   {grp:'an', k:'cat', label:'Category', cls:'cat', render:r => esc(catLabel(r.cat)), text:r => catLabel(r.cat)},
   {grp:'an', k:'role', label:'Verdict', render:rolePill, text:r => ROLE[r.role]},
-  {grp:'an', k:'rev', label:'Review?', render:revPill, text:r => r.rev ? 'review' : '', sortKey:r => -r.rev},
+  {grp:'an', k:'rev', label:'Needs review?', render:revPill, text:r => r.rev ? 'review' : '', sortKey:r => -r.rev},
   {grp:'an', k:'reason', label:'Why this keep', cls:'wide', render:reasonCell, text:r => REASON[r.reason] || ''},
   {grp:'an', k:'keep', label:'Proposed fix', cls:'wide', render:decisionCell, text:r => decisionCell(r).replace(/<[^>]+>/g, ''), sortKey:r => r.keep},
   {grp:'an', k:'conf', label:'Conf.', sortKey:r => +r.conf},
@@ -669,7 +669,7 @@ function fixes(el) {
     {grp:'wn', k:'sdef', label:'Synset (lemmas · definition)', cls:'wide', render:r => `<b>${esc(r.mem)}</b><div>${esc(r.sdef)}</div><div class="sub">${r.prop==='P8814' ? slink(r.value) : ilink(r.value)}</div>`, text:r => r.mem+' '+r.sdef+' '+r.value},
     {grp:'an', k:'cat', label:'Category', render:r=>esc(catLabel(r.cat)), text:r=>catLabel(r.cat)},
     {grp:'an', k:'reason', label:'Why this keep', render:reasonCell, text:r=>REASON[r.reason]||''},
-    {grp:'an', k:'rev', label:'Review?', render:revPill, text:r=>r.rev?'review':'', sortKey:r=>-r.rev}],
+    {grp:'an', k:'rev', label:'Needs review?', render:revPill, text:r=>r.rev?'review':'', sortKey:r=>-r.rev}],
     filters:[{k:'prop',label:'Both properties',opts:()=>[['P8814','P8814'],['P5063','P5063']],get:r=>r.prop},
              {k:'rev',label:'Review: any',opts:()=>[['1','Review first only']],get:r=>r.rev},
              {k:'reason',label:'Reason: any',opts:()=>Object.entries(REASON),get:r=>r.reason}]});

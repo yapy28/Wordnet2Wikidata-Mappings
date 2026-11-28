@@ -178,10 +178,12 @@ python scripts/run_pipeline.py --from proposals
 # Single steps, if needed: fetch_violations.py, categorize_all_final.py, crosscheck_sources.py,
 # generate_proposals_v2.py, generate_dashboard.py, export_review_sheet.py (each takes the run dir as argument)
 
-# Human decisions per duplicate group (optional): keep / leave / defer / remove + note.
-# Collaborators record them in the shared Google Sheet (review_sheet.xlsx); import_decisions.py writes
-# manual_review/decisions.csv. Decisions override the source pick and the heuristics;
-# leave/defer groups get no removals; remove groups lose every statement.
+# Human decisions per duplicate group (optional): keep one / keep all / remove all / decide later + note.
+#   keep one: only the Keep QID keeps the value · keep all: nothing removed (valid duplicate)
+#   remove all: the value is removed from every item · decide later: nothing removed yet
+# Collaborators record them in the single Groups tab of the shared Google Sheet (review_sheet.xlsx);
+# import_decisions.py writes manual_review/decisions.csv (the old words keep / leave / remove / defer
+# are still read). Decisions override the source pick and the heuristics.
 
 # Output files in data/output/20261101/:
 # - p5063_violations_from_wd.csv, p8814_violations_from_wd.csv (raw fetch)

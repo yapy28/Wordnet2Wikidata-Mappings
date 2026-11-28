@@ -27,13 +27,13 @@ from generate_dashboard import CATEGORY_LABELS, build_rows, load_csv, load_fixes
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 REASON = {
-    "source": "Source repos name it", "decision": "Human decision", "decision_leave": "Human decision: keep both",
-    "decision_remove": "Human decision: nobody keeps it",
-    "defer": "Deferred", "members_note": "Label is in synset members", "similarity_note": "Best similarity score",
+    "source": "Source repos name it", "decision": "Human decision: keep one", "decision_leave": "Human decision: keep all",
+    "decision_remove": "Human decision: remove all",
+    "defer": "Human decision: decide later", "members_note": "Label is in synset members", "similarity_note": "Best similarity score",
     "label_in_members": "Label is in synset members", "label_in_definition": "Label appears in definition",
     "score": "Best label/definition score", "score_tie": "Tie - no clear winner", "fallback": "No evidence (first listed)",
 }
-ROLE = {"keep": "KEEP", "remove": "REMOVE", "valid": "VALID", "deferred": "DEFERRED", "unresolved": "UNRESOLVED"}
+ROLE = {"keep": "KEEP", "remove": "REMOVE", "valid": "VALID", "deferred": "DECIDE LATER", "unresolved": "UNRESOLVED"}
 
 HEADER_NOTES = {
     "Property": "P8814 = the same WordNet synset ID is on several Wikidata items. P5063 = the same ILI (Interlingual Index) is on several items.",
@@ -44,20 +44,23 @@ HEADER_NOTES = {
     "Wikidata items": "Every item that carries the value. KEEP = proposed to keep it, REMOVE = proposed to lose it, VALID = legitimate duplicate.",
     "Source repos say": "What english-wordnet / english-namenet map this value to. These are the original source of the mappings, the strongest evidence we have.",
     "Why this keep": "Why the proposal keeps this item. 'Tie' and 'No evidence' are weak: a human should look.",
-    "Weak?": "YES = the proposal rests on weak signals (no source QID and no clear winner). Check these first.",
-    "Decision": "keep = keep the QID in 'Keep QID' and remove the value from the others. leave = valid duplicate, remove nothing. remove = the value belongs on none of these items; every statement in the group is removed. defer = not sure, hold. Empty = no decision, the proposal stands.",
-    "Keep QID": "Only for 'keep': the item that keeps the value (must be one of the items in the group). Prefilled with the current proposal.",
+    "Needs review?": "YES = the proposal rests on weak signals (no source QID and no clear winner). These rows are at the top: check them first.",
+    "Decision": "keep one = only the item in 'Keep QID' keeps the value; it is removed from the others. keep all = valid duplicate, nothing is removed. remove all = the value belongs on none of these items; it is removed from all of them. decide later = not sure yet, nothing is removed. Empty = no decision, the proposal stands.",
+    "Keep QID": "Only for 'keep one': the item that keeps the value (must be one of the items in the group). Prefilled with the current proposal; ignored for the other decisions.",
     "Note": "Why you decided this. Shown in the dashboard.",
 }
 GUIDE = [
     ("What this is", "Duplicate WordNet-to-Wikidata mappings (P8814 synset IDs, P5063 ILIs). Each row is one group of Wikidata items that share the same value."),
-    ("What to do", "Go to 'Review queue'. For each row pick a Decision (keep / leave / remove / defer), set Keep QID if you chose keep, add a Note. Only the yellow columns are yours."),
-    ("Rule of thumb", "WordNet is a lumper, Wikidata is a splitter: synsets deliberately group synonyms, so a duplicate is often a legitimate synonym pair. When in doubt: leave."),
-    ("Neither item is right", "If the value maps to none of the items (the synset is not any of these concepts), pick remove: every statement in the group is removed, and the value goes back on the backlog for a proper mapping later."),
+    ("What to do", "Go to 'Groups'. Rows with Needs review? = YES are at the top: start there. For each row pick a Decision, set Keep QID if you chose 'keep one', add a Note. Only the yellow columns are yours."),
+    ("keep one", "Only one item is right. Put it in Keep QID; the value is removed from every other item in the group."),
+    ("keep all", "All the items are right (a legitimate duplicate). Nothing is removed."),
+    ("remove all", "None of the items is right. The value is removed from all of them and goes back on the backlog for a proper mapping later."),
+    ("decide later", "Not sure yet. Nothing is removed; the row stays open."),
+    ("Rule of thumb", "WordNet is a lumper, Wikidata is a splitter: synsets deliberately group synonyms, so a duplicate is often a legitimate synonym pair. When in doubt: keep all."),
     ("Redirects", "Keep redirects (e.g. Q272388 redirects to Q202526). Never remove the statement a redirect depends on."),
     ("Defunct / new items", "Wikidata has items for defunct names that WordNet picked up. New Wikidata IDs are taken with a grain of salt: prefer established items as the keep."),
-    ("Different concepts", "If the items are genuinely different (cholestasis vs acholia), leave both and say so in the Note: we propose a WordNet-side synset split instead of removing anything."),
-    ("Tabs", "Review queue = weak proposals, check first. All groups = every group, if you want to overrule any other proposal. Decisions made so far are prefilled."),
+    ("Different concepts", "If the items are genuinely different (cholestasis vs acholia), pick keep all and say so in the Note: we propose a WordNet-side synset split instead of removing anything."),
+    ("Tabs", "Groups = every duplicate group, one row each, the only tab you edit. Decisions made so far are prefilled. Summary = counts."),
 ]
 
 
@@ -116,7 +119,7 @@ def build_groups(run_dir):
                 "items": lines(rs, value),
                 "source": ", ".join(first["src"]) if first["src"] else "(no QID in source repos)",
                 "reason": REASON.get(first["reason"], first["reason"]) + (f' - {first["dnote"]}' if first["dnote"] else ""),
-                "weak": "YES" if any(r["rev"] for r in rs) and d.get("action") not in ("keep", "leave", "remove") else "",
+                "weak": "YES" if any(r["rev"] for r in rs) and d.get("action") not in ("keep one", "keep all", "remove all") else "",
                 "action": d.get("action", ""), "keep_qid": d.get("keep_qid") or keep, "note": d.get("note", ""),
             })
     return groups
@@ -124,7 +127,7 @@ def build_groups(run_dir):
 
 COLUMNS = [("Property", "prop", 10), ("Synset / ILI", "value", 16), ("WordNet definition", "sdef", 45),
            ("WordNet members", "mem", 30), ("Category", "cat", 28), ("Wikidata items", "items", 70),
-           ("Source repos say", "source", 22), ("Why this keep", "reason", 28), ("Weak?", "weak", 8),
+           ("Source repos say", "source", 22), ("Why this keep", "reason", 28), ("Needs review?", "weak", 10),
            ("Decision", "action", 12), ("Keep QID", "keep_qid", 12), ("Note", "note", 40)]
 INPUT_COLS = {"Decision", "Keep QID", "Note"}
 
@@ -152,8 +155,9 @@ def write_groups(wb, title, groups):
             cell.alignment = Alignment(wrap_text=True, vertical="top")
             if name in INPUT_COLS:
                 cell.fill = yellow
-    dv = DataValidation(type="list", formula1='"keep,leave,defer,remove"', allow_blank=True, showErrorMessage=True,
-                        errorTitle="Decision", error="Pick keep, leave, defer or remove (or clear the cell).")
+    dv = DataValidation(type="list", formula1='"keep one,keep all,remove all,decide later"', allow_blank=True,
+                        showErrorMessage=True, errorTitle="Decision",
+                        error="Pick keep one, keep all, remove all or decide later (or clear the cell).")
     ws.add_data_validation(dv)
     dv.add(f"J2:J{max(ws.max_row, 2)}")
     ws.freeze_panes = "C2"
@@ -186,14 +190,13 @@ def main(run_dir=None):
         for c in row:
             c.alignment = Alignment(wrap_text=True, vertical="top")
 
-    write_groups(wb, "Review queue", weak)
-    write_groups(wb, "All groups", groups)
+    write_groups(wb, "Groups", sorted(groups, key=lambda g: not g["weak"]))  # needs-review rows first
 
     summary = wb.create_sheet("Summary")
     summary.column_dimensions["A"].width = 38
     for k, v in [
         ("Groups needing a decision (all)", len(groups)),
-        ("  of which weak (review queue)", len(weak)),
+        ("  of which need review", len(weak)),
         ("  P8814 groups", sum(g["prop"] == "P8814" for g in groups)),
         ("  P5063 groups", sum(g["prop"] == "P5063" for g in groups)),
         ("Already decided", sum(bool(g["action"]) for g in groups)),
@@ -203,7 +206,7 @@ def main(run_dir=None):
 
     out = run_dir / "review_sheet.xlsx"
     wb.save(out)
-    print(f"Saved {out}: {len(groups)} groups, {len(weak)} in the review queue")
+    print(f"Saved {out}: {len(groups)} groups, {len(weak)} need review")
 
 
 if __name__ == "__main__":

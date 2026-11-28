@@ -1,10 +1,10 @@
 prop,value,action,keep_qid,note
-P5063,i110785,leave,,Cholestasis (Q1075923) and acholia (Q8187550) are two different conditions per the WordNet community; propose a WordNet-side synset split instead of removing a statement
-P5063,i88051,leave,,
-P5063,i88284,defer,,
-P5063,i92706,keep,Q1580236,
-P8814,00058822-n,keep,Q18351973,
-P8814,00069153-n,leave,,
-P8814,00123481-n,defer,,
-P8814,01615818-n,leave,,WordNet links both QIDs deliberately (Polyborus plancus = crested caracara is a synonym pair); keep both statements
-P8814,01915807-n,leave,,Q272388 is a redirect item for Q202526; we keep redirects - no removal
+P5063,i110785,keep all,,Cholestasis (Q1075923) and acholia (Q8187550) are two different conditions per the WordNet community; propose a WordNet-side synset split instead of removing a statement
+P5063,i88051,keep all,,
+P5063,i88284,decide later,,
+P5063,i92706,keep one,Q1580236,
+P8814,00058822-n,keep one,Q18351973,
+P8814,00069153-n,keep all,,
+P8814,00123481-n,decide later,,
+P8814,01615818-n,keep all,,WordNet links both QIDs deliberately (Polyborus plancus = crested caracara is a synonym pair); keep both statements
+P8814,01915807-n,keep all,,Q272388 is a redirect item for Q202526; we keep redirects - no removal
