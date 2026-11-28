@@ -55,10 +55,11 @@ class ReconcileTests(unittest.TestCase):
             rows_ = gd.build_rows(self.violations[prop], self.fix[prop], field, prop, {}, self.reasons, self.dnotes)
             counts = Counter(r["role"] for r in rows_)
             held_groups = sum(1 for v in self.real_groups(prop) if (prop, v) in self.held)
+            remove_all_groups = sum(1 for v in self.real_groups(prop) if (prop, v) in self.remove_all)
             self.assertEqual(counts["unresolved"], 0, prop)
             self.assertEqual(sum(counts.values()), len(self.violations[prop]))
             self.assertEqual(counts["remove"], len(self.fix[prop]))
-            self.assertEqual(counts["keep"], len(self.real_groups(prop)) - held_groups - len(self.remove_all))
+            self.assertEqual(counts["keep"], len(self.real_groups(prop)) - held_groups - remove_all_groups, prop)
 
     def test_every_group_has_one_keep_inside_the_group(self):
         for prop in ("P8814", "P5063"):
